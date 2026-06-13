@@ -12,7 +12,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,6 +100,7 @@ export default function DashboardPage() {
           linkedin: p.linkedin ?? '',
           github: p.github ?? '',
           summary: p.summary ?? '',
+          image: p.image ?? '',
         });
         setExperiences(
           (p.experiences ?? []).map((e: Record<string, unknown>) => ({
@@ -232,6 +233,7 @@ export default function DashboardPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2">
                   <Avatar className="size-7">
+                    {profile?.image && <AvatarImage src={profile.image} alt={displayName} />}
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
                       {displayName.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

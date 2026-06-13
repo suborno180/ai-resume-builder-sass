@@ -197,8 +197,10 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         const newImageUrl = data.imageUrl as string;
-        setEditProfile((prev) => ({ ...prev, image: newImageUrl }));
-        setProfile({ ...editProfile, image: newImageUrl });
+        // Add cache-busting query param to force browser to load new image
+        const cacheBustUrl = `${newImageUrl}?t=${Date.now()}`;
+        setEditProfile((prev) => ({ ...prev, image: cacheBustUrl }));
+        setProfile((prev) => prev ? { ...prev, image: cacheBustUrl } : null);
         toast.success('Profile photo updated!');
       } else {
         const data = await res.json();
@@ -213,7 +215,7 @@ export default function ProfilePage() {
         fileInputRef.current.value = '';
       }
     }
-  }, [editProfile, setProfile]);
+  }, [setProfile]);
 
   // Handle image delete
   const handleImageDelete = useCallback(async () => {
@@ -223,7 +225,7 @@ export default function ProfilePage() {
       });
       if (res.ok) {
         setEditProfile((prev) => ({ ...prev, image: '' }));
-        setProfile({ ...editProfile, image: '' });
+        setProfile((prev) => prev ? { ...prev, image: '' } : null);
         toast.success('Profile photo removed');
       } else {
         toast.error('Failed to remove photo');
@@ -231,7 +233,7 @@ export default function ProfilePage() {
     } catch {
       toast.error('Network error');
     }
-  }, [editProfile, setProfile]);
+  }, [setProfile]);
 
   // Add skill
   const handleAddSkill = useCallback(async () => {

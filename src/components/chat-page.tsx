@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -366,6 +366,7 @@ export default function ChatPage() {
           jobTitle: p.jobTitle ?? '', email: p.email ?? '', phone: p.phone ?? '',
           location: p.location ?? '', website: p.website ?? '', linkedin: p.linkedin ?? '',
           github: p.github ?? '', summary: p.summary ?? '', hobbies: p.hobbies ?? '',
+          image: p.image ?? '',
         });
         setExperiences((p.experiences ?? []).map((e: Record<string, unknown>) => ({
           id: e.id as string, company: (e.company as string) ?? '', position: (e.position as string) ?? '',
@@ -716,10 +717,11 @@ export default function ChatPage() {
                 <FileDown className="size-3" />{confirmedCount}/{pendingFields.length} confirmed
               </Badge>
             )}
-            {session?.user?.name && (
+            {(session?.user?.name || profile?.image) && (
               <Avatar className="size-7">
+                {profile?.image && <AvatarImage src={profile.image} alt="Profile" />}
                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                  {session.user.name.slice(0, 2).toUpperCase()}
+                  {session?.user?.name?.slice(0, 2).toUpperCase() ?? 'U'}
                 </AvatarFallback>
               </Avatar>
             )}
