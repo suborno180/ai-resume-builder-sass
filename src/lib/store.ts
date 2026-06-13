@@ -68,8 +68,11 @@ export interface AppState {
   setTargetJobTitle: (title: string) => void;
 
   // AI Chat
+  currentConversationId: string | null;
+  setCurrentConversationId: (id: string | null) => void;
   chatMessages: ChatMessage[];
   addChatMessage: (message: ChatMessage) => void;
+  setChatMessages: (messages: ChatMessage[]) => void;
   clearChat: () => void;
 
   // AI Polish
@@ -160,9 +163,12 @@ export const useAppStore = create<AppState>((set) => ({
   setTargetJobTitle: (title) => set({ targetJobTitle: title }),
 
   // ── AI Chat ────────────────────────────────────────────────
+  currentConversationId: null,
+  setCurrentConversationId: (id) => set({ currentConversationId: id }),
   chatMessages: [],
   addChatMessage: (message) =>
     set((state) => ({ chatMessages: [...state.chatMessages, message] })),
+  setChatMessages: (messages) => set({ chatMessages: messages }),
   clearChat: () => set({ chatMessages: [] }),
 
   // ── AI Polish ──────────────────────────────────────────────

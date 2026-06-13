@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/lib/store';
@@ -237,6 +238,9 @@ export default function AuthDialog() {
           <DialogTitle className="text-center text-xl">
             Welcome to ResuMe AI
           </DialogTitle>
+          <DialogDescription className="text-center text-sm text-muted-foreground">
+            Sign in to your account or create a new one
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs

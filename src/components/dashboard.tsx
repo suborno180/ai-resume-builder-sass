@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import {
   Plus,
@@ -42,6 +43,11 @@ import {
   FolderOpen,
   Sparkles,
   MessageSquare,
+  LayoutDashboard,
+  BarChart3,
+  CheckCircle2,
+  Eye,
+  Clock,
 } from 'lucide-react';
 import type { ResumeData } from '@/lib/types';
 
@@ -50,7 +56,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08 },
+    transition: { staggerChildren: 0.06 },
   },
 };
 
@@ -76,6 +82,16 @@ const templateNames: Record<string, string> = {
   professional: 'Professional',
   executive: 'Executive',
   compact: 'Compact',
+};
+
+// ── Template badge colors ────────────────────────────────────
+const templateColors: Record<string, string> = {
+  minimal: 'bg-zinc-500/15 text-zinc-400',
+  modern: 'bg-primary/15 text-primary',
+  creative: 'bg-amber-500/15 text-amber-400',
+  professional: 'bg-sky-500/15 text-sky-400',
+  executive: 'bg-rose-500/15 text-rose-400',
+  compact: 'bg-violet-500/15 text-violet-400',
 };
 
 // ── Component ────────────────────────────────────────────────
@@ -181,7 +197,6 @@ export default function Dashboard() {
 
   // ── Navigation helpers ────────────────────────────────────
   const handleCreateResume = () => {
-    // Reset AI flow state
     clearChat();
     setJobAnalysis(null);
     setTargetJobDescription('');
@@ -201,7 +216,7 @@ export default function Dashboard() {
   const userName =
     profile?.firstName || profile?.lastName
       ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim()
-      : session?.user?.email?.split('@')[0] ?? 'there';
+      : (session?.user?.name || session?.user?.email?.split('@')[0]) ?? 'there';
 
   const userInitials = userName
     .split(' ')
@@ -209,6 +224,22 @@ export default function Dashboard() {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  // ── Profile completion ────────────────────────────────────
+  const profileCompletion = useMemo(() => {
+    if (!profile) return 0;
+    const fields = [
+      profile.firstName,
+      profile.lastName,
+      profile.jobTitle,
+      profile.email,
+      profile.phone,
+      profile.location,
+      profile.summary,
+    ];
+    const filled = fields.filter((f) => f && f.trim().length > 0).length;
+    return Math.round((filled / fields.length) * 100);
+  }, [profile]);
 
   // ── Format date ───────────────────────────────────────────
   const formatDate = (dateStr?: string) => {
@@ -238,70 +269,181 @@ export default function Dashboard() {
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
-              <FileText className="size-5 text-primary" />
+          {/* Logo */}
+          <div className="flex items-center gap-6">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer"
+              onClick={() => setView('dashboard')}
+            >
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+                <FileText className="size-5 text-primary" />
+              </div>
+              <span className="text-lg font-semibold tracking-tight">
+                ResuMe<span className="text-primary">AI</span>
+              </span>
             </div>
-            <span className="text-lg font-semibold tracking-tight">
-              ResuMe<span className="text-primary">AI</span>
-            </span>
-          </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            {/* Nav links - hidden on mobile */}
+            <nav className="hidden md:flex items-center gap-1">
               <Button
                 variant="ghost"
-                className="relative h-9 w-9 rounded-full"
+                size="sm"
+                className="gap-2 text-primary bg-primary/10"
+                onClick={() => setView('dashboard')}
               >
-                <Avatar className="size-9 border border-border">
-                  <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-                    {userInitials || 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <LayoutDashboard className="size-4" />
+                Dashboard
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="flex items-center gap-2 px-2 py-1.5">
-                <div className="flex flex-col space-y-0.5">
-                  <p className="text-sm font-medium">{userName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {session?.user?.email}
-                  </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setView('templates')}
+              >
+                <Eye className="size-4" />
+                Templates
+              </Button>
+            </nav>
+          </div>
+
+          {/* Right side: Create button + User menu */}
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              className="hidden sm:flex gap-2"
+              onClick={handleCreateResume}
+            >
+              <Plus className="size-4" />
+              New Resume
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                >
+                  <Avatar className="size-9 border border-border">
+                    <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+                      {userInitials || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <div className="flex flex-col space-y-0.5">
+                    <p className="text-sm font-medium">{userName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {session?.user?.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
-                <LogOut className="size-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="sm:hidden gap-2"
+                  onClick={handleCreateResume}
+                >
+                  <Plus className="size-4" />
+                  New Resume
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => setView('templates')}
+                >
+                  <Eye className="size-4" />
+                  Templates
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="gap-2"
+                >
+                  <LogOut className="size-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
       {/* ── Main content ───────────────────────────────────── */}
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 flex-1">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 flex-1 w-full">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="space-y-8"
         >
-          {/* Welcome section */}
-          <motion.div variants={itemVariants}>
+          {/* ── Hero Section ──────────────────────────────────── */}
+          <motion.div variants={itemVariants} className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Welcome back, <span className="text-primary">{userName}</span>
             </h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className="text-muted-foreground">
               Build and manage your professional resumes with AI assistance.
             </p>
           </motion.div>
 
-          {/* Quick actions */}
+          {/* ── Stats Row ─────────────────────────────────────── */}
+          <motion.div variants={itemVariants}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* Total Resumes */}
+              <Card className="border-border/30 bg-card/50">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Total Resumes</p>
+                      <p className="text-3xl font-bold tracking-tight">{resumes.length}</p>
+                    </div>
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
+                      <FileText className="size-5 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Profile Completion */}
+              <Card className="border-border/30 bg-card/50">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Profile Completion</p>
+                      <p className="text-3xl font-bold tracking-tight">{profileCompletion}%</p>
+                    </div>
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <CheckCircle2 className="size-5 text-emerald-500" />
+                    </div>
+                  </div>
+                  <Progress value={profileCompletion} className="mt-3 h-1.5" />
+                </CardContent>
+              </Card>
+
+              {/* AI Chats */}
+              <Card className="border-border/30 bg-card/50">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">AI Sessions</p>
+                      <p className="text-3xl font-bold tracking-tight">
+                        {resumes.length > 0 ? resumes.length : 0}
+                      </p>
+                    </div>
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-sky-500/10">
+                      <MessageSquare className="size-5 text-sky-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* ── Quick Actions ─────────────────────────────────── */}
           <motion.div variants={itemVariants}>
             <h2 className="mb-4 text-lg font-semibold">Quick Actions</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* Create New Resume with AI */}
+              {/* Chat with AI */}
               <motion.div
                 variants={cardHover}
                 initial="rest"
@@ -309,18 +451,20 @@ export default function Dashboard() {
                 className="cursor-pointer"
                 onClick={handleCreateResume}
               >
-                <Card className="h-full border-primary/30 bg-primary/5 transition-colors hover:border-primary/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-11 items-center justify-center rounded-lg bg-primary/15">
-                        <Sparkles className="size-5 text-primary" />
+                <Card className="h-full border-primary/30 bg-primary/5 transition-colors hover:border-primary/50 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                  <CardHeader className="relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/15">
+                        <Sparkles className="size-6 text-primary" />
                       </div>
-                      <div>
-                        <CardTitle className="text-base">Create New Resume with AI</CardTitle>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base">Chat with AI</CardTitle>
                         <CardDescription className="mt-0.5">
-                          Tell AI about your dream job and get a tailored resume
+                          Describe your dream job and get a tailored resume
                         </CardDescription>
                       </div>
+                      <ArrowRightSlim className="size-5 text-primary/60 hidden sm:block" />
                     </div>
                   </CardHeader>
                 </Card>
@@ -342,18 +486,20 @@ export default function Dashboard() {
                   setView('smart-form');
                 }}
               >
-                <Card className="h-full border-border/50 transition-colors hover:border-primary/40">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10">
-                        <MessageSquare className="size-5 text-primary" />
+                <Card className="h-full border-border/50 transition-colors hover:border-primary/40 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/3 rounded-full -translate-y-1/2 translate-x-1/2" />
+                  <CardHeader className="relative">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
+                        <BarChart3 className="size-6 text-primary" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <CardTitle className="text-base">Quick Build</CardTitle>
                         <CardDescription className="mt-0.5">
                           Skip AI chat and fill in your details directly
                         </CardDescription>
                       </div>
+                      <ArrowRightSlim className="size-5 text-muted-foreground/40 hidden sm:block" />
                     </div>
                   </CardHeader>
                 </Card>
@@ -361,35 +507,65 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Existing Resumes */}
+          {/* ── Existing Resumes ──────────────────────────────── */}
           <motion.div variants={itemVariants}>
-            <h2 className="mb-4 text-lg font-semibold">Your Resumes</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Your Resumes</h2>
+              {resumes.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-xs"
+                  onClick={handleCreateResume}
+                >
+                  <Plus className="size-3.5" />
+                  New
+                </Button>
+              )}
+            </div>
 
             {resumes.length === 0 ? (
               <Card className="border-dashed border-border/60">
-                <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-                  <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                    <FolderOpen className="size-7 text-muted-foreground" />
+                <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
+                  <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50">
+                    <FolderOpen className="size-8 text-muted-foreground" />
                   </div>
-                  <div>
-                    <p className="font-medium">No resumes yet</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Create your first AI-powered resume to get started.
+                  <div className="space-y-1">
+                    <p className="font-semibold text-lg">No resumes yet</p>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Create your first AI-powered resume to get started. Our AI will help you craft the perfect resume for any job.
                     </p>
                   </div>
-                  <Button
-                    onClick={handleCreateResume}
-                    variant="outline"
-                    className="mt-2 gap-1.5"
-                  >
-                    <Plus className="size-4" />
-                    Create Resume
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                    <Button
+                      onClick={handleCreateResume}
+                      className="gap-2"
+                    >
+                      <Sparkles className="size-4" />
+                      Create with AI
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        clearChat();
+                        setJobAnalysis(null);
+                        setTargetJobDescription('');
+                        setTargetJobTitle('');
+                        setPolishedContent(null);
+                        setSelectedTemplate('modern');
+                        setView('smart-form');
+                      }}
+                      className="gap-2"
+                    >
+                      <BarChart3 className="size-4" />
+                      Quick Build
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {resumes.map((resume) => (
+                {resumes.map((resume, idx) => (
                   <motion.div
                     key={resume.id}
                     variants={cardHover}
@@ -397,22 +573,23 @@ export default function Dashboard() {
                     whileHover="hover"
                   >
                     <Card
-                      className="group cursor-pointer border-border/50 transition-colors hover:border-primary/40"
+                      className="group cursor-pointer border-border/30 bg-card/50 transition-all hover:border-primary/40 hover:bg-card/80"
                       onClick={() => handleEditResume(resume)}
                     >
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-md bg-primary/10">
-                              <FileText className="size-4 text-primary" />
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                              <FileText className="size-5 text-primary" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <CardTitle className="truncate text-base">
+                              <CardTitle className="truncate text-base leading-snug">
                                 {resume.title}
                               </CardTitle>
-                              <CardDescription className="mt-0.5">
-                                Updated {formatDate(resume.updatedAt)}
-                              </CardDescription>
+                              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                                <Clock className="size-3" />
+                                {formatDate(resume.updatedAt)}
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -430,7 +607,10 @@ export default function Dashboard() {
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs font-medium ${templateColors[resume.templateId] || 'bg-primary/15 text-primary'}`}
+                        >
                           {templateNames[resume.templateId] || resume.templateId}
                         </Badge>
                       </CardContent>
@@ -495,5 +675,25 @@ export default function Dashboard() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// ── Inline arrow icon (lightweight) ─────────────────────────
+function ArrowRightSlim({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
   );
 }
