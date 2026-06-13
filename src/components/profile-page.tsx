@@ -197,10 +197,9 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         const newImageUrl = data.imageUrl as string;
-        // Add cache-busting query param to force browser to load new image
-        const cacheBustUrl = `${newImageUrl}?t=${Date.now()}`;
-        setEditProfile((prev) => ({ ...prev, image: cacheBustUrl }));
-        setProfile((prev) => prev ? { ...prev, image: cacheBustUrl } : null);
+        // base64 data URL from database — no cache-busting needed
+        setEditProfile((prev) => ({ ...prev, image: newImageUrl }));
+        setProfile((prev) => prev ? { ...prev, image: newImageUrl } : null);
         toast.success('Profile photo updated!');
       } else {
         const data = await res.json();

@@ -2,24 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import { existsSync } from "fs";
-import path from "path";
-import { createId } from "@paralleldrive/cuid2";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "profiles");
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
-function getExtension(contentType: string): string {
-  const map: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
-  };
-  return map[contentType] || ".jpg";
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,50 +36,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure upload directory exists
-    if (!existsSync(UPLOAD_DIR)) {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    }
+    // Convert file to base64 data URL
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    // Get current profile to check for existing image
-    const profile = await db.profile.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    // Delete old image if exists
-    if (profile?.image) {
-      const oldPath = path.join(process.cwd(), "public", profile.image);
-      if (existsSync(oldPath)) {
-        try {
-          await unlink(oldPath);
-        } catch {
-          // Ignore deletion errors
-        }
-      }
-    }
-
-    // Generate unique filename
-    const id = createId();
-    const ext = getExtension(file.type);
-    const filename = `${id}${ext}`;
-    const filePath = path.join(UPLOAD_DIR, filename);
-
-    // Write file to disk
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
-
-    // Update profile with image path
-    const imageUrl = `/uploads/profiles/${filename}`;
+    // Save the full base64 data URL in the database
     await db.profile.upsert({
       where: { userId: session.user.id },
-      update: { image: imageUrl },
+      update: { image: dataUrl },
       create: {
         userId: session.user.id,
-        image: imageUrl,
+        image: dataUrl,
       },
     });
 
-    return NextResponse.json({ imageUrl });
+    return NextResponse.json({ imageUrl: dataUrl });
   } catch (error) {
     console.error("Image upload error:", error);
     return NextResponse.json(
@@ -122,17 +79,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete file from disk
-    const filePath = path.join(process.cwd(), "public", profile.image);
-    if (existsSync(filePath)) {
-      try {
-        await unlink(filePath);
-      } catch {
-        // Ignore deletion errors
-      }
-    }
-
-    // Update profile to remove image
+    // Remove image from database
     await db.profile.update({
       where: { userId: session.user.id },
       data: { image: null },
