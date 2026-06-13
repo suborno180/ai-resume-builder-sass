@@ -386,7 +386,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-4">
                   <div className="relative group">
                     <div
-                      className="relative size-20 rounded-full overflow-hidden border-2 border-border cursor-pointer"
+                      className="relative w-16 h-20 rounded overflow-hidden border-2 border-border cursor-pointer"
                       onClick={() => !uploading && fileInputRef.current?.click()}
                       role="button"
                       tabIndex={0}
@@ -402,7 +402,7 @@ export default function ProfilePage() {
                         <img
                           src={editProfile.image}
                           alt="Profile photo"
-                          className="size-full object-cover"
+                          className="size-full object-cover object-top"
                         />
                       ) : (
                         <div className="size-full flex items-center justify-center bg-muted">

@@ -80,7 +80,7 @@ function MinimalTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e5e5' }}
+              style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '1.5px solid #ddd' }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', margin: 0, color: '#000' }}>
@@ -251,17 +251,17 @@ function ModernTemplate({ profile, experiences, education, skills }: ResumeRende
             src={profile.image}
             alt=""
             style={{
-              width: 72, height: 72, borderRadius: '50%',
-              objectFit: 'cover', marginBottom: 14,
-              border: '3px solid rgba(255,255,255,0.2)',
+              width: 64, height: 80, borderRadius: 4,
+              objectFit: 'cover', objectPosition: 'center top', marginBottom: 14,
+              border: '2px solid rgba(255,255,255,0.2)',
             }}
           />
         ) : (
           <div style={{
-            width: 72, height: 72, borderRadius: '50%',
+            width: 64, height: 80, borderRadius: 4,
             background: accent, display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 14,
-            fontSize: 28, fontWeight: 700, color: 'white',
+            fontSize: 24, fontWeight: 700, color: 'white',
           }}>
             {name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
@@ -463,7 +463,7 @@ function ProfessionalTemplate({ profile, experiences, education, skills }: Resum
             <img
               src={profile.image}
               alt=""
-              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e0e0e0' }}
+              style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '1.5px solid #d0d0d0' }}
             />
           )}
           <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.04em', margin: 0, color: navy, textTransform: 'uppercase' }}>
@@ -637,7 +637,7 @@ function CreativeTemplate({ profile, experiences, education, skills }: ResumeRen
             <img
               src={profile.image}
               alt=""
-              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+              style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             />
           )}
           <div>
@@ -839,7 +839,7 @@ function ExecutiveTemplate({ profile, experiences, education, skills }: ResumeRe
           <img
             src={profile.image}
             alt=""
-            style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '3px solid rgba(255,255,255,0.3)' }}
+            style={{ width: 52, height: 65, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}
           />
         )}
         <div>
@@ -1006,7 +1006,7 @@ function CompactTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 38, height: 48, borderRadius: 3, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0 }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.01em', color: '#000' }}>
@@ -1149,6 +1149,13 @@ function ElegantTemplate({ profile, experiences, education, skills }: ResumeRend
 
       {/* Header - centered */}
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        {profile?.image && (
+          <img
+            src={profile.image}
+            alt=""
+            style={{ width: 52, height: 65, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', marginBottom: 10, border: '1.5px solid #1e3a5f30' }}
+          />
+        )}
         <h1 style={{
           fontSize: 24, fontWeight: 400, margin: '0 0 6px', color: navy,
           fontFamily: 'Georgia, serif', letterSpacing: '0.03em',
@@ -1312,6 +1319,15 @@ function TechnicalTemplate({ profile, experiences, education, skills }: ResumeRe
         minHeight: '297mm',
         overflow: 'visible',
       }}>
+        {/* Photo */}
+        {profile?.image && (
+          <img
+            src={profile.image}
+            alt=""
+            style={{ width: 60, height: 75, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', marginBottom: 14, border: '2px solid rgba(255,255,255,0.15)' }}
+          />
+        )}
+
         {/* Name & Title */}
         <h1 style={{
           fontSize: 18, fontWeight: 700, color: 'white',
@@ -1516,6 +1532,13 @@ function AcademicTemplate({ profile, experiences, education, skills }: ResumeRen
     <div style={{ ...a4Style, padding: '12mm 15mm', fontFamily: 'Inter, sans-serif' }}>
       {/* Header - centered */}
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        {profile?.image && (
+          <img
+            src={profile.image}
+            alt=""
+            style={{ width: 48, height: 60, borderRadius: 3, objectFit: 'cover', objectPosition: 'center top', marginBottom: 8, border: '1px solid #ccc' }}
+          />
+        )}
         <h1 style={{
           fontSize: 20, fontWeight: 400, margin: '0 0 4px', color: '#000',
           fontFamily: 'Georgia, Times New Roman, serif', letterSpacing: '0.02em',
@@ -1683,12 +1706,23 @@ function BoldTemplate({ profile, experiences, education, skills }: ResumeRenderD
         padding: '20mm 15mm 12mm',
         color: 'white',
       }}>
-        <h1 style={{
-          fontSize: 28, fontWeight: 800, margin: '0 0 4px',
-          color: 'white', letterSpacing: '-0.01em',
-        }}>
-          {name}
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {profile?.image && (
+            <img
+              src={profile.image}
+              alt=""
+              style={{ width: 52, height: 65, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}
+            />
+          )}
+          <div>
+            <h1 style={{
+              fontSize: 28, fontWeight: 800, margin: '0 0 4px',
+              color: 'white', letterSpacing: '-0.01em',
+            }}>
+              {name}
+            </h1>
+          </div>
+        </div>
         {profile?.jobTitle && (
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 400, letterSpacing: '0.02em' }}>
             {profile.jobTitle}
@@ -1852,7 +1886,7 @@ function SwissTemplate({ profile, experiences, education, skills }: ResumeRender
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             {profile?.image && (
-              <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e0e0e0' }} />
+              <img src={profile.image} alt="" style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '1.5px solid #d0d0d0' }} />
             )}
             <div>
               <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em', margin: 0, color: accentColor, textTransform: 'uppercase' }}>
@@ -2001,7 +2035,7 @@ function CorporateTemplate({ profile, experiences, education, skills }: ResumeRe
       <div style={{ background: accentColor, padding: '14mm 15mm 10mm', color: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {profile?.image && (
-            <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '3px solid rgba(255,255,255,0.4)' }} />
+            <img src={profile.image} alt="" style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, border: '2px solid rgba(255,255,255,0.4)' }} />
           )}
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', letterSpacing: '-0.01em' }}>{name}</h1>
@@ -2146,7 +2180,7 @@ function InfreshTemplate({ profile, experiences, education, skills }: ResumeRend
       <div style={{ padding: '14mm 15mm 8mm' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
           {profile?.image && (
-            <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: 20, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} />
+            <img src={profile.image} alt="" style={{ width: 48, height: 60, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} />
           )}
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: '#111', letterSpacing: '-0.02em' }}>{name}</h1>
@@ -2293,7 +2327,7 @@ function TypographTemplate({ profile, experiences, education, skills }: ResumeRe
           </div>
         )}
         {profile?.image && (
-          <img src={profile.image} alt="" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginLeft: 'auto', border: '2px solid #e5e5e5' }} />
+          <img src={profile.image} alt="" style={{ width: 44, height: 55, borderRadius: 4, objectFit: 'cover', objectPosition: 'center top', flexShrink: 0, marginLeft: 'auto', border: '1.5px solid #ddd' }} />
         )}
       </div>
 
