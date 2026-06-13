@@ -80,7 +80,7 @@ function MinimalTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e5e5e5' }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', margin: 0, color: '#000' }}>
@@ -251,16 +251,17 @@ function ModernTemplate({ profile, experiences, education, skills }: ResumeRende
             src={profile.image}
             alt=""
             style={{
-              width: 40, height: 40, borderRadius: '50%',
+              width: 72, height: 72, borderRadius: '50%',
               objectFit: 'cover', marginBottom: 14,
+              border: '3px solid rgba(255,255,255,0.2)',
             }}
           />
         ) : (
           <div style={{
-            width: 40, height: 40, borderRadius: '50%',
+            width: 72, height: 72, borderRadius: '50%',
             background: accent, display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 14,
-            fontSize: 20, fontWeight: 700, color: 'white',
+            fontSize: 28, fontWeight: 700, color: 'white',
           }}>
             {name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
@@ -462,7 +463,7 @@ function ProfessionalTemplate({ profile, experiences, education, skills }: Resum
             <img
               src={profile.image}
               alt=""
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e0e0e0' }}
             />
           )}
           <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.04em', margin: 0, color: navy, textTransform: 'uppercase' }}>
@@ -636,7 +637,7 @@ function CreativeTemplate({ profile, experiences, education, skills }: ResumeRen
             <img
               src={profile.image}
               alt=""
-              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             />
           )}
           <div>
@@ -838,7 +839,7 @@ function ExecutiveTemplate({ profile, experiences, education, skills }: ResumeRe
           <img
             src={profile.image}
             alt=""
-            style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+            style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '3px solid rgba(255,255,255,0.3)' }}
           />
         )}
         <div>
@@ -1005,7 +1006,7 @@ function CompactTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.01em', color: '#000' }}>
@@ -1851,7 +1852,7 @@ function SwissTemplate({ profile, experiences, education, skills }: ResumeRender
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
             {profile?.image && (
-              <img src={profile.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e0e0e0' }} />
             )}
             <div>
               <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em', margin: 0, color: accentColor, textTransform: 'uppercase' }}>
@@ -2000,7 +2001,7 @@ function CorporateTemplate({ profile, experiences, education, skills }: ResumeRe
       <div style={{ background: accentColor, padding: '14mm 15mm 10mm', color: 'white' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {profile?.image && (
-            <img src={profile.image} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.5)' }} />
+            <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '3px solid rgba(255,255,255,0.4)' }} />
           )}
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', letterSpacing: '-0.01em' }}>{name}</h1>
@@ -2145,7 +2146,7 @@ function InfreshTemplate({ profile, experiences, education, skills }: ResumeRend
       <div style={{ padding: '14mm 15mm 8mm' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
           {profile?.image && (
-            <img src={profile.image} alt="" style={{ width: 40, height: 40, borderRadius: 16, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} />
+            <img src={profile.image} alt="" style={{ width: 56, height: 56, borderRadius: 20, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} />
           )}
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: '#111', letterSpacing: '-0.02em' }}>{name}</h1>
@@ -2292,7 +2293,7 @@ function TypographTemplate({ profile, experiences, education, skills }: ResumeRe
           </div>
         )}
         {profile?.image && (
-          <img src={profile.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginLeft: 'auto' }} />
+          <img src={profile.image} alt="" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginLeft: 'auto', border: '2px solid #e5e5e5' }} />
         )}
       </div>
 
