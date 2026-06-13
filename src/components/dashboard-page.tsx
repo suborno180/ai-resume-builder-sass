@@ -50,6 +50,7 @@ import {
   Settings,
 } from 'lucide-react';
 import type { ResumeData } from '@/lib/types';
+import AdminPanel from '@/components/admin-panel';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -326,6 +327,9 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Admin Panel - only visible for master admin */}
+          <AdminPanel />
 
           {/* Profile Completion */}
           <motion.div variants={itemVariants} className="mb-8">
