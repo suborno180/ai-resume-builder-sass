@@ -17,6 +17,7 @@ import {
   Plus, Send, Sparkles, MessageSquare, Loader2, Menu, Trash2,
   FileText, LogOut, User, LayoutDashboard, Check, X, Pencil,
   ChevronDown, ChevronUp, FileDown, Shield, CheckCircle2, AlertCircle,
+  Paperclip,
 } from 'lucide-react';
 import type { ExtractedField, ChatMessage } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
@@ -250,6 +251,56 @@ function ProfileStatusBar({ profile, experiences, education, skills }: {
   );
 }
 
+// ── Conversation Item (reusable for sidebar & sheet) ──────────
+function ConversationItem({
+  conv,
+  isActive,
+  onSelect,
+  onDelete,
+  deleteConfirmId,
+  setDeleteConfirmId,
+}: {
+  conv: Conversation;
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  deleteConfirmId: string | null;
+  setDeleteConfirmId: (id: string | null) => void;
+}) {
+  const isConfirming = deleteConfirmId === conv.id;
+
+  return (
+    <div
+      className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors text-sm ${
+        isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+      }`}
+      onClick={onSelect}
+    >
+      <MessageSquare className="size-3.5 shrink-0" />
+      <span className="truncate min-w-0 flex-1">{conv.title}</span>
+      <div className="shrink-0 flex items-center" onClick={(e) => e.stopPropagation()}>
+        {isConfirming ? (
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="size-6 text-destructive hover:bg-destructive/10"
+              onClick={onDelete}>
+              <Check className="size-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="size-6 text-muted-foreground"
+              onClick={() => setDeleteConfirmId(null)}>
+              <X className="size-3" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" size="icon" className="size-6 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            onClick={() => setDeleteConfirmId(conv.id)}>
+            <Trash2 className="size-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Chat Page ───────────────────────────────────────────
 export default function ChatPage() {
   const {
@@ -267,7 +318,10 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // base64 data URL
+  const [selectedImageName, setSelectedImageName] = useState<string>('');
 
   // ── Fetch conversations ──────────────────────────────────────
   const fetchConversations = useCallback(async () => {
@@ -287,10 +341,11 @@ export default function ChatPage() {
       if (res.ok) {
         const data = await res.json();
         setChatMessages(
-          data.messages.map((m: { id: string; role: string; content: string; profileUpdates: string; createdAt: string }) => ({
+          data.messages.map((m: { id: string; role: string; content: string; imageUrl: string; profileUpdates: string; createdAt: string }) => ({
             id: m.id,
             role: m.role as 'user' | 'assistant',
             content: m.content,
+            imageUrl: m.imageUrl || undefined,
             extractedInfo: m.profileUpdates ? (typeof m.profileUpdates === 'string' ? JSON.parse(m.profileUpdates) : m.profileUpdates) : undefined,
             createdAt: m.createdAt,
           }))
@@ -387,10 +442,44 @@ export default function ChatPage() {
     setSidebarOpen(false);
   }, [setCurrentConversationId, clearPendingFields, fetchMessages]);
 
+  // ── Handle image selection ─────────────────────────────────
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be under 10MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setSelectedImage(result);
+      setSelectedImageName(file.name);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input so the same file can be re-selected
+    e.target.value = '';
+  }, []);
+
+  const removeSelectedImage = useCallback(() => {
+    setSelectedImage(null);
+    setSelectedImageName('');
+  }, []);
+
   // ── Send message ─────────────────────────────────────────────
   const sendMessage = useCallback(async () => {
     const trimmed = inputMessage.trim();
-    if (!trimmed || aiLoading) return;
+    if ((!trimmed && !selectedImage) || aiLoading) return;
 
     let convId = currentConversationId;
     if (!convId) {
@@ -398,15 +487,26 @@ export default function ChatPage() {
       if (!convId) return;
     }
 
-    addChatMessage({ role: 'user', content: trimmed });
+    addChatMessage({
+      role: 'user',
+      content: trimmed || '[Image]',
+      imageUrl: selectedImage || undefined,
+    });
     setInputMessage('');
+    const imageToSend = selectedImage;
+    setSelectedImage(null);
+    setSelectedImageName('');
     setAiLoading(true);
     if (inputRef.current) inputRef.current.style.height = 'auto';
 
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, conversationId: convId }),
+        body: JSON.stringify({
+          message: trimmed || '[Image]',
+          conversationId: convId,
+          imageUrl: imageToSend || undefined,
+        }),
       });
 
       if (res.ok) {
@@ -436,7 +536,7 @@ export default function ChatPage() {
     } finally {
       setAiLoading(false);
     }
-  }, [inputMessage, aiLoading, currentConversationId, createConversation, addChatMessage, setAiLoading, pendingFields, setPendingFields, fetchConversations, setRoute]);
+  }, [inputMessage, selectedImage, aiLoading, currentConversationId, createConversation, addChatMessage, setAiLoading, pendingFields, setPendingFields, fetchConversations, setRoute]);
 
   // ── Confirmation handlers ────────────────────────────────────
   const handleConfirmField = useCallback((fieldId: string) => { updateFieldStatus(fieldId, 'confirmed'); }, [updateFieldStatus]);
@@ -488,6 +588,18 @@ export default function ChatPage() {
   const confirmedCount = pendingFields.filter(f => f.status === 'confirmed' || f.status === 'edited').length;
   const hasPendingOrConfirmed = pendingFields.length > 0;
 
+  // ── Render message image ──────────────────────────────────
+  const renderMessageImage = (imageUrl: string) => (
+    <div className="mt-2 mb-1">
+      <img
+        src={imageUrl}
+        alt="Uploaded image"
+        className="max-w-[280px] max-h-[300px] rounded-lg border border-border/30 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => window.open(imageUrl, '_blank')}
+      />
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 flex bg-background">
       {/* ── Sidebar (desktop) ────────────────────────────────── */}
@@ -499,22 +611,17 @@ export default function ChatPage() {
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-2 space-y-1">
+          <div className="p-2 space-y-1 overflow-hidden">
             {conversations.map((conv) => (
-              <div
+              <ConversationItem
                 key={conv.id}
-                className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors text-sm ${
-                  currentConversationId === conv.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                }`}
-                onClick={() => selectConversation(conv.id)}
-              >
-                <MessageSquare className="size-3.5 shrink-0" />
-                <span className="truncate flex-1">{conv.title}</span>
-                <Button variant="ghost" size="icon" className="size-6 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10"
-                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(conv.id); }}>
-                  <Trash2 className="size-3" />
-                </Button>
-              </div>
+                conv={conv}
+                isActive={currentConversationId === conv.id}
+                onSelect={() => selectConversation(conv.id)}
+                onDelete={() => deleteConversation(conv.id)}
+                deleteConfirmId={deleteConfirm}
+                setDeleteConfirmId={setDeleteConfirm}
+              />
             ))}
             {conversations.length === 0 && (
               <div className="text-xs text-muted-foreground text-center py-8">No conversations yet</div>
@@ -557,15 +664,18 @@ export default function ChatPage() {
               <Plus className="size-4" /> New Chat
             </Button>
           </div>
-          <ScrollArea className="h-[calc(100vh-250px)]">
-            <div className="px-3 space-y-1">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <div className="px-3 space-y-1 overflow-hidden">
               {conversations.map((conv) => (
-                <div key={conv.id} className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors text-sm ${
-                  currentConversationId === conv.id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50'
-                }`} onClick={() => selectConversation(conv.id)}>
-                  <MessageSquare className="size-3.5 shrink-0" />
-                  <span className="truncate flex-1">{conv.title}</span>
-                </div>
+                <ConversationItem
+                  key={conv.id}
+                  conv={conv}
+                  isActive={currentConversationId === conv.id}
+                  onSelect={() => selectConversation(conv.id)}
+                  onDelete={() => deleteConversation(conv.id)}
+                  deleteConfirmId={deleteConfirm}
+                  setDeleteConfirmId={setDeleteConfirm}
+                />
               ))}
             </div>
           </ScrollArea>
@@ -659,9 +769,16 @@ export default function ChatPage() {
                       <div className="text-xs font-medium text-muted-foreground mb-1.5">
                         {msg.role === 'assistant' ? 'AI Assistant' : 'You'}
                       </div>
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
+
+                      {/* Show image if present */}
+                      {msg.imageUrl && renderMessageImage(msg.imageUrl)}
+
+                      {/* Show text content (skip [Image] placeholder if image exists) */}
+                      {!(msg.imageUrl && msg.content === '[Image]') && msg.content && (
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
 
                       {/* Show extracted info cards inline */}
                       {msg.role === 'assistant' && msg.extractedInfo && Array.isArray(msg.extractedInfo) && msg.extractedInfo.length > 0 && (
@@ -724,13 +841,65 @@ export default function ChatPage() {
         {/* Input area */}
         <div className="border-t border-border/30 p-4 shrink-0">
           <div className="max-w-3xl mx-auto">
+            {/* Image preview */}
+            <AnimatePresence>
+              {selectedImage && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-3 overflow-hidden"
+                >
+                  <div className="relative inline-flex items-center gap-2 rounded-lg border border-border/40 bg-muted/30 p-2">
+                    <img
+                      src={selectedImage}
+                      alt="Preview"
+                      className="max-h-[120px] max-w-[200px] rounded-md object-contain"
+                    />
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground max-w-[120px] truncate">{selectedImageName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] text-destructive hover:text-destructive gap-1 px-2"
+                        onClick={removeSelectedImage}
+                      >
+                        <X className="size-3" /> Remove
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="flex items-end gap-2">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+
+              {/* Image upload button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 size-10 text-muted-foreground hover:text-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={aiLoading}
+                title="Upload image"
+              >
+                <Paperclip className="size-5" />
+              </Button>
+
               <div className="flex-1">
                 <Textarea ref={inputRef} value={inputMessage} onChange={handleInputChange} onKeyDown={handleKeyDown}
                   placeholder={currentConversationId ? "Type your message... (Shift+Enter for new line)" : "Start a conversation..."}
                   className="resize-none min-h-[44px] max-h-[200px] pr-4 text-sm" disabled={aiLoading} rows={1} />
               </div>
-              <Button size="icon" onClick={sendMessage} disabled={!inputMessage.trim() || aiLoading} className="shrink-0 size-10">
+              <Button size="icon" onClick={sendMessage} disabled={(!inputMessage.trim() && !selectedImage) || aiLoading} className="shrink-0 size-10">
                 {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </Button>
             </div>

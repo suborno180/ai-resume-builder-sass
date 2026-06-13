@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         id: m.id,
         role: m.role,
         content: m.content,
+        imageUrl: m.imageUrl || "",
         profileUpdates: m.profileUpdates ? JSON.parse(m.profileUpdates) : null,
         createdAt: m.createdAt,
       })),

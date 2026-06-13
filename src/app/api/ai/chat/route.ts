@@ -44,11 +44,11 @@ NEVER suggest generating a resume unless the user explicitly asks. NEVER auto-ge
 Always end with a helpful follow-up question when appropriate.`
 
 function buildContextMessages(
-  chatHistory: Array<{ role: string; content: string }>,
+  chatHistory: Array<{ role: string; content: string; imageUrl?: string }>,
   userProfile: Record<string, unknown>,
   targetJob: string
-): Array<{ role: string; content: string }> {
-  const messages: Array<{ role: string; content: string }> = [
+): Array<{ role: string; content: string; imageUrl?: string }> {
+  const messages: Array<{ role: string; content: string; imageUrl?: string }> = [
     {
       role: "assistant",
       content: SYSTEM_PROMPT + `\n\nCURRENT USER PROFILE:\n${JSON.stringify(userProfile, null, 2)}\n\nTARGET JOB: ${targetJob || "Not specified yet"}`,
@@ -70,6 +70,7 @@ function buildContextMessages(
       messages.push({
         role: msg.role as "user" | "assistant",
         content: cleanContent,
+        ...(msg.imageUrl ? { imageUrl: msg.imageUrl } : {}),
       })
     }
   }
@@ -217,10 +218,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { message, conversationId } = body
+    const { message, conversationId, imageUrl } = body
 
-    if (!message || !conversationId) {
-      return NextResponse.json({ error: "Message and conversationId required" }, { status: 400 })
+    if ((!message && !imageUrl) || !conversationId) {
+      return NextResponse.json({ error: "Message or image and conversationId required" }, { status: 400 })
     }
 
     // Verify conversation ownership
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
 
     // Save user message
     await db.chatMessage.create({
-      data: { conversationId, role: "user", content: message },
+      data: { conversationId, role: "user", content: message || "[Image]", imageUrl: imageUrl || "" },
     })
 
     // Get conversation history
@@ -292,18 +293,55 @@ export async function POST(request: NextRequest) {
     const chatHistory = dbMessages.map((m) => ({
       role: m.role,
       content: m.content,
+      imageUrl: m.imageUrl || undefined,
     }))
 
     const contextMessages = buildContextMessages(chatHistory, userProfile, conversation.targetJob)
 
-    // Call AI
+    // Call AI - use VLM if there's an image, regular chat otherwise
     const zai = await ZAI.create()
-    const completion = await zai.chat.completions.create({
-      messages: contextMessages,
-      thinking: { type: "disabled" },
-    })
+    let aiContent: string
 
-    let aiContent = completion.choices[0]?.message?.content || "I'm having trouble responding right now. Please try again."
+    if (imageUrl) {
+      // Use VLM for image + text messages
+      // Build vision-compatible messages from context
+      type VisionContent = Array<{ type: string; text?: string; image_url?: { url: string } }>
+      const visionMessages: Array<{ role: string; content: string | VisionContent }> = []
+
+      for (const msg of contextMessages) {
+        // Check if this message has an associated image
+        const msgHasImage = msg.imageUrl && msg.role === "user"
+        const isCurrentUserMsg = msg.role === "user" && msg.content === (message || "[Image]")
+
+        if (msgHasImage || isCurrentUserMsg) {
+          const imgSrc = isCurrentUserMsg ? imageUrl : (msg.imageUrl || imageUrl)
+          const textContent = msg.content === "[Image]"
+            ? "Please analyze this image in the context of our resume building conversation."
+            : msg.content
+          visionMessages.push({
+            role: msg.role,
+            content: [
+              { type: "text", text: textContent },
+              { type: "image_url", image_url: { url: imgSrc } },
+            ],
+          })
+        } else {
+          visionMessages.push({ role: msg.role, content: msg.content })
+        }
+      }
+
+      const completion = await zai.chat.completions.createVision({
+        messages: visionMessages as Parameters<typeof zai.chat.completions.createVision>[0]["messages"],
+        thinking: { type: "disabled" },
+      })
+      aiContent = completion.choices[0]?.message?.content || "I'm having trouble analyzing this image. Please try again."
+    } else {
+      const completion = await zai.chat.completions.create({
+        messages: contextMessages,
+        thinking: { type: "disabled" },
+      })
+      aiContent = completion.choices[0]?.message?.content || "I'm having trouble responding right now. Please try again."
+    }
 
     // Extract blocks from AI response
     const { cleanContent, extractedFields, generateResume } = extractBlocks(aiContent)

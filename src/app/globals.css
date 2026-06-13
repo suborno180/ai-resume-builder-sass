@@ -124,6 +124,11 @@
     height: 100%;
     overflow: hidden;
   }
+  /* Fix Radix ScrollArea viewport child expanding beyond container width */
+  [data-radix-scroll-area-viewport] > div {
+    display: block !important;
+    overflow: hidden !important;
+  }
 }
 
 /* Custom scrollbar */

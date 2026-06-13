@@ -117,6 +117,8 @@ export interface ChatMessage {
   id?: string;
   role: 'user' | 'assistant';
   content: string;
+  /** Image URL or base64 data URL attached to the message */
+  imageUrl?: string;
   /** Extracted profile fields that need user confirmation */
   extractedInfo?: ExtractedField[];
   /** Timestamp */
