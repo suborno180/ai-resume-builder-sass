@@ -489,7 +489,7 @@ export default function ChatPage() {
   const hasPendingOrConfirmed = pendingFields.length > 0;
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="fixed inset-0 flex bg-background">
       {/* ── Sidebar (desktop) ────────────────────────────────── */}
       <aside className="hidden md:flex w-64 flex-col border-r border-border/30 bg-card/30 shrink-0">
         <div className="flex items-center justify-between p-3 border-b border-border/30">
@@ -498,7 +498,7 @@ export default function ChatPage() {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-1">
             {conversations.map((conv) => (
               <div
@@ -585,9 +585,9 @@ export default function ChatPage() {
       </Sheet>
 
       {/* ── Main chat area ──────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 h-full">
         {/* Chat header */}
-        <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/95 backdrop-blur-md shrink-0">
+        <header className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/95 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="md:hidden w-8" />
             <div className="flex items-center gap-2">
@@ -617,7 +617,7 @@ export default function ChatPage() {
         </header>
 
         {/* Messages area */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="max-w-3xl mx-auto px-4 py-6">
             {/* Empty state */}
             {!currentConversationId && chatMessages.length === 0 && (

@@ -119,8 +119,10 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    height: 100%;
+    overflow: hidden;
   }
 }
 
@@ -188,6 +190,8 @@
     background: white !important;
     margin: 0;
     padding: 0;
+    overflow: visible !important;
+    height: auto !important;
   }
 
   /* Ensure A4 page size */
