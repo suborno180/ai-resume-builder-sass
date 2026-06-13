@@ -1,0 +1,591 @@
+     1→# Worklog - AI Resume Builder SaaS
+     2→
+     3→## Task 2: Backend Infrastructure (Completed)
+     4→
+     5→### What was built:
+     6→
+     7→#### 1. Environment Setup
+     8→- Added `NEXTAUTH_SECRET` and `NEXTAUTH_URL` to `.env`
+     9→- Installed `bcryptjs` and `@types/bcryptjs` for password hashing
+    10→
+    11→#### 2. NextAuth Configuration
+    12→- Created `/src/app/api/auth/[...nextauth]/route.ts`
+    13→  - Credentials provider (email + password)
+    14→  - JWT strategy for session management
+    15→  - Session callback that includes user `id` field
+    16→  - bcryptjs password comparison in authorize function
+    17→  - Custom sign-in page set to `/`
+    18→  - Exported `authOptions` for reuse in other API routes
+    19→
+    20→#### 3. Registration API
+    21→- Created `/src/app/api/auth/register/route.ts`
+    22→  - POST endpoint for user registration
+    23→  - Validates required fields (email, password)
+    24→  - Enforces minimum password length (6 characters)
+    25→  - Validates email uniqueness (409 Conflict for duplicates)
+    26→  - Hashes password with bcryptjs (salt rounds: 12)
+    27→  - Creates user record and associated empty profile
+    28→  - Returns 201 Created with user data
+    29→
+    30→#### 4. Profile API Routes
+    31→- Created `/src/app/api/profile/route.ts`
+    32→  - GET: Returns user's profile with experiences, education, and skills (ordered by `order` field)
+    33→  - PUT: Upserts profile fields using conditional spread
+    34→
+    35→- Created `/src/app/api/profile/experience/route.ts`
+    36→  - POST: Add experience (validates company, position, startDate)
+    37→  - PUT: Update experience (with ownership verification)
+    38→  - DELETE: Delete experience (with ownership verification)
+    39→
+    40→- Created `/src/app/api/profile/education/route.ts`
+    41→  - POST: Add education (validates institution, degree, startDate)
+    42→  - PUT: Update education (with ownership verification)
+    43→  - DELETE: Delete education (with ownership verification)
+    44→
+    45→- Created `/src/app/api/profile/skill/route.ts`
+    46→  - POST: Add skill (validates name, defaults category to "technical")
+    47→  - DELETE: Delete skill (with ownership verification)
+    48→
+    49→#### 5. Resume API Routes
+    50→- Created `/src/app/api/resume/route.ts`
+    51→  - GET: List all resumes for current user (ordered by updatedAt desc)
+    52→  - POST: Create new resume (validates title, defaults templateId to "minimal")
+    53→  - PUT: Update resume (with ownership verification)
+    54→  - DELETE: Delete resume (with ownership verification)
+    55→
+    56→#### 6. AI Generation API
+    57→- Created `/src/app/api/ai/generate/route.ts`
+    58→  - POST endpoint accepting `{ type, context }`
+    59→  - Supports 4 generation types:
+    60→    - `summary`: Professional summary from profile data
+    61→    - `experience`: Bullet points for experience entry
+    62→    - `skills`: Relevant skills suggestions (returns parsed JSON array)
+    63→    - `cover-letter`: Full cover letter generation
+    64→  - Uses `z-ai-web-dev-sdk` for AI completions
+    65→  - Custom system prompt for resume writing expertise
+    66→  - Type-specific prompt builders with context awareness
+    67→  - JSON parsing for skills type responses
+    68→
+    69→#### 7. Auth Provider Component
+    70→- Created `/src/components/auth-provider.tsx`
+    71→  - Client component wrapping `SessionProvider` from next-auth/react
+    72→  - Ready to be added to root layout
+    73→
+    74→#### 8. NextAuth Types
+    75→- Created `/src/types/next-auth.d.ts`
+    76→  - Extended `Session.user` with `id: string`
+    77→  - Extended `User` with `id: string`
+    78→  - Extended `JWT` with `id: string`
+    79→
+    80→### Testing Results:
+    81→All endpoints tested and verified:
+    82→- ✅ Registration: Creates user + profile, validates uniqueness
+    83→- ✅ Login: Returns session token via NextAuth credentials
+    84→- ✅ Session: Returns user data including `id` field
+    85→- ✅ Profile GET/PUT: Read and update profile with relations
+    86→- ✅ Experience CRUD: Create, update, delete with ownership checks
+    87→- ✅ Education CRUD: Create, update, delete with ownership checks
+    88→- ✅ Skill POST/DELETE: Add and remove with ownership checks
+    89→- ✅ Resume CRUD: Full CRUD with ownership verification
+    90→- ✅ AI Generate: Skills generation returning parsed JSON array
+    91→
+    92→### Security:
+    93→- All profile/resume/AI endpoints require authentication via `getServerSession(authOptions)`
+    94→- All mutation endpoints verify resource ownership before update/delete
+    95→- Passwords hashed with bcryptjs (12 salt rounds)
+    96→- Proper HTTP status codes (401, 404, 409, 400, 500)
+    97→
+    98→---
+    99→
+   100→## Task 6-a: Dashboard Component (Completed)
+   101→
+   102→### What was built:
+   103→
+   104→#### 1. Dashboard Component
+   105→- Created `/src/components/dashboard.tsx` — 'use client' component
+   106→- Dark theme with emerald green accents, minimal card-based layout
+   107→- **Header**: Sticky header with app logo, user avatar with dropdown menu (Edit Profile, Browse Templates, Sign Out)
+   108→- **Welcome message**: Shows user's first name or email prefix with emerald accent
+   109→- **Profile setup prompt**: Conditional card prompting user to set up profile if no firstName/lastName exists
+   110→- **Quick action cards** (3-column grid):
+   111→  1. "Create New Resume" — navigates to templates if profile exists, otherwise to profile-setup with a toast notification
+   112→  2. "Edit Profile" — navigates to profile-setup view
+   113→  3. "Browse Templates" — navigates to templates view
+   114→- **Existing resumes list** (fetched from `/api/resume`):
+   115→  - Resume cards showing: title, template name (badge), last updated date
+   116→  - Click to navigate to editor view (sets `currentResume` in store)
+   117→  - Delete button (visible on hover) with AlertDialog confirmation
+   118→  - Empty state with folder icon and "Create Resume" CTA when no resumes exist
+   119→- **Loading state**: Full-screen spinner while fetching data
+   120→
+   121→#### 2. Updated Page Component
+   122→- Modified `/src/app/page.tsx` to render Dashboard when authenticated and `currentView === 'dashboard'`
+   123→- Shows landing placeholder otherwise
+   124→
+   125→### Key Features:
+   126→- **Framer Motion animations**: Staggered entrance animations, card hover scale effects with emerald glow shadow
+   127→- **Delete confirmation**: AlertDialog with destructive styling, loading spinner during deletion
+   128→- **Template name mapping**: Friendly display names for template IDs (minimal, modern, creative, professional, executive)
+   129→- **Data fetching**: Fetches profile and resumes in parallel on mount via `useCallback` + `useEffect`
+   130→- **Store integration**: Uses `useAppStore` for navigation (`setView`), profile data, resume data
+   131→- **Auth integration**: Uses `useSession` for user info, `signOut` for logout
+   132→- **Toast notifications**: Success/error toasts via sonner for delete operations, info toast for profile setup redirect
+   133→- **Responsive design**: Mobile-first grid layout (1→2→3 columns), touch-friendly targets
+   134→
+   135→### Components Used:
+   136→- shadcn/ui: Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Avatar, AvatarFallback, DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, AlertDialog, Badge
+   137→- framer-motion: container/item stagger variants, card hover scale+shadow
+   138→- Lucide icons: Plus, User, Layout, FileText, Trash2, LogOut, Loader2, FolderOpen, ArrowRight
+   139→
+   140→### Testing:
+   141→- ✅ ESLint passes with no errors
+   142→- ✅ Dev server compiles successfully
+   143→- ✅ No TypeScript errors
+   144→
+   145→---
+   146→
+   147→## Task 5: Landing Page & Auth Dialog (Completed)
+   148→
+   149→### What was built:
+   150→
+   151→#### 1. Landing Page Component (`/src/components/landing.tsx`)
+   152→- 'use client' component with framer-motion animations
+   153→- Hero section with animated headline "Build Your Resume with AI" (emerald green accent on "with AI")
+   154→- Subtitle: "Create professional resumes in minutes with AI-powered suggestions and beautiful templates"
+   155→- Two CTA buttons:
+   156→  - "Get Started Free" (primary) — opens auth dialog in signup mode, or navigates to dashboard if logged in
+   157→  - "View Templates" (outline) — opens auth dialog if not logged in, or navigates to templates view
+   158→- Three feature cards with icons:
+   159→  1. Sparkles icon — "AI-Powered Writing" with description
+   160→  2. Layout icon — "Beautiful Templates" with description
+   161→  3. Pencil icon — "Easy to Customize" with description
+   162→- Cards have hover effect (border turns emerald)
+   163→- Fade-up entrance animations with staggered delays
+   164→- Minimal footer with copyright and year
+   165→- Responsive design (mobile-first, grid adapts from 1→2→3 columns)
+   166→- Sticky footer pattern using min-h-screen + flex-col + mt-auto
+   167→
+   168→#### 2. Auth Dialog Component (`/src/components/auth-dialog.tsx`)
+   169→- 'use client' component using shadcn/ui Dialog
+   170→- Two tabs: "Sign In" and "Sign Up" controlled by store's `authMode`
+   171→- Sign In form:
+   172→  - Email + password fields with labels
+   173→  - Client-side validation (required fields)
+   174→  - Calls `signIn('credentials', ...)` from next-auth/react
+   175→  - Loading state with spinner on submit button
+   176→  - Error display from API response
+   177→- Sign Up form:
+   178→  - Name, email, password, confirm password fields
+   179→  - Client-side validation (required, min password length, password match)
+   180→  - Calls `/api/auth/register` for account creation
+   181→  - Auto sign-in after successful registration
+   182→  - Falls back to login tab if auto-login fails
+   183→  - Loading state with spinner on submit button
+   184→  - Error display from API response
+   185→- After successful auth:
+   186→  - Fetches profile data from `/api/profile`
+   187→  - Updates store with profile, experiences, education, skills
+   188→  - Closes dialog and navigates to dashboard view
+   189→  - Shows success toast via sonner
+   190→- Form resets on dialog close
+   191→- Returns null if user already has a session
+   192→- Uses `useAppStore` for all state management (no router)
+   193→
+   194→#### 3. Page Integration (`/src/app/page.tsx`)
+   195→- Renders both Landing and AuthDialog components
+   196→- Both are 'use client' components
+   197→
+   198→### Design Details:
+   199→- Dark theme with emerald green (#10b981 / oklch(0.696 0.17 162.48)) as primary
+   200→- Clean typography-first design with generous whitespace
+   201→- Consistent use of shadcn/ui components (Button, Input, Label, Dialog, Tabs)
+   202→- Custom scrollbar styling already in globals.css
+   203→- All animations use framer-motion with smooth easeOut transitions
+   204→
+   205→### Quality Checks:
+   206→- ✅ ESLint passes with no errors
+   207→- ✅ Dev server compiles and serves pages correctly
+   208→- ✅ All components are 'use client'
+   209→- ✅ Store-based navigation (no next/router)
+   210→- ✅ Loading states with disabled buttons
+   211→- ✅ Error messages displayed in forms and via toast
+   212→- ✅ Responsive design
+   213→
+   214→---
+   215→
+   216→## Task 6-b: Profile Setup Multi-Step Form (Completed)
+   217→
+   218→### What was built:
+   219→
+   220→#### 1. Profile Setup Component (`/src/components/profile-setup.tsx`)
+   221→- 'use client' component with 4-step multi-step form
+   222→- **Progress indicator**: Progress bar + step icons (User, FileText, Briefcase, Lightbulb) at top
+   223→- **Step 1 - Personal Info**: firstName, lastName, jobTitle, email, phone, location, website, linkedin, github
+   224→- **Step 2 - Summary**: Textarea with "AI Generate" button (calls `/api/ai/generate` with type "summary")
+   225→- **Step 3 - Experience & Education**: Full CRUD for experience and education entries
+   226→  - Experience sub-form: company, position, location, startDate, endDate, current checkbox, description
+   227→  - Education sub-form: institution, degree, field, location, startDate, endDate, gpa, description
+   228→  - Add/edit/delete with animated expand/collapse forms
+   229→  - Scrollable card lists with empty state placeholders
+   230→- **Step 4 - Skills**: Add/remove skills with category selector (technical, soft, language, other), "AI Suggest Skills" button (calls `/api/ai/generate` with type "skills"), skills grouped by category with badges
+   231→
+   232→#### 2. Key Features:
+   233→- Framer Motion slide transitions between steps with directional animation
+   234→- Back/Next navigation on each step; "Complete & Continue" on final step
+   235→- Progressive data saving: profile data saved on step transitions via PUT to `/api/profile`
+   236→- Experience/Education/Skills CRUD operations hit their respective API endpoints
+   237→- On mount, fetches existing profile data from `/api/profile` and populates the form
+   238→- AI loading states with spinner and disabled buttons
+   239→- Toast notifications for all operations (success/error) via sonner
+   240→- Completed steps show checkmark and are clickable for navigation
+   241→- Store integration: uses `useAppStore` for all data and navigation
+   242→- Session integration: uses `useSession` for authentication checks
+   243→- Duplicate skill detection when adding manually or via AI
+   244→
+   245→#### 3. Updated Page Component (`/src/app/page.tsx`)
+   246→- View router based on `useAppStore` currentView
+   247→- Landing view with sign up/log in buttons
+   248→- Inline auth dialog for login/signup with form handling and next-auth integration
+   249→- Auto-navigation: authenticated → profile-setup, unauthenticated → landing
+   250→- Session state management with loading spinner
+   251→
+   252→### Design:
+   253→- Dark theme with emerald green (primary) accents
+   254→- Clean, minimal card-based layout with consistent padding
+   255→- shadcn/ui components: Input, Label, Button, Textarea, Select, Progress, Card, CardHeader, CardTitle, CardContent, Badge, Checkbox
+   256→- Responsive design (mobile-first with sm: breakpoints)
+   257→- Custom scrollbar styling for experience/education lists
+   258→
+   259→### Quality Checks:
+   260→- ✅ ESLint passes with no errors
+   261→- ✅ Dev server compiles successfully
+   262→- ✅ All components are 'use client'
+   263→- ✅ Store-based navigation
+   264→- ✅ Progressive data saving
+   265→- ✅ AI loading states with spinners
+   266→- ✅ Responsive design
+   267→
+   268→---
+   269→
+   270→## Task 7: Template Gallery Component (Completed)
+   271→
+   272→### What was built:
+   273→
+   274→#### 1. Template Gallery Component (`/src/components/template-gallery.tsx`)
+   275→- 'use client' component with dark theme and emerald green accents
+   276→- **Header**: Sticky header with back button (navigates to dashboard), FileText icon, and "Choose Your Template" title
+   277→- **Subtitle**: Helper text explaining template selection
+   278→- **6 template cards** in a responsive grid (1→2→3 columns):
+   279→  1. **Minimal** — Clean, single-column layout with simple lines. Black and white elegance. Preview: white card with gray lines simulating name, contact, sections, and content.
+   280→  2. **Modern** — Two-column layout with dark sidebar for skills/contact. Preview: split layout with dark left sidebar containing skill dots and right main area with content lines.
+   281→  3. **Professional** — Traditional format with centered header and horizontal rules. Preview: centered name, horizontal dividers, centered section titles.
+   282→  4. **Creative** — Colored accent sidebar with modern typography. Preview: emerald green left sidebar with white/semi-transparent elements, main area with emerald accent header.
+   283→  5. **Executive** — Bold header with strong typography. Preview: dark header block with white text, followed by bold section titles and content lines.
+   284→  6. **Compact** — Dense layout with smaller fonts. Preview: tightly packed lines with thinner spacing and more content rows.
+   285→
+   286→- **CSS-based visual previews**: Each template has a unique ~160x200px CSS preview built with colored divs and lines (no images needed), giving users a visual idea of the layout structure
+   287→- **Template selection**:
+   288→  - "Use Template" button creates a new resume via POST to `/api/resume`
+   289→  - Sets `selectedTemplate` in store and navigates to 'editor' view
+   290→  - Currently selected template shows a primary-colored border with shadow and a "Selected" badge with checkmark
+   291→  - Loading state with spinner during resume creation
+   292→- **Animations**: Framer Motion staggered entrance animations, card hover scale effect (1.03x)
+   293→- **Toast notifications**: Success on template selection, error on failure
+   294→
+   295→#### 2. Updated Page Component (`/src/app/page.tsx`)
+   296→- Added imports for `TemplateGallery` and `Dashboard` components
+   297→- Added `case 'dashboard'` and `case 'templates'` to the view router switch statement
+   298→- Templates view renders `<TemplateGallery />`
+   299→
+   300→### Design Details:
+   301→- Dark theme with emerald green (primary) accents matching the rest of the app
+   302→- Cards use `border-primary` for selected state and `border-border/50` for default
+   303→- Hover effect: slight scale up (1.03x) with smooth transition
+   304→- Selected template has primary border + shadow (`shadow-md shadow-primary/10`) + Badge overlay
+   305→- Responsive grid: 1 column on mobile, 2 on sm, 3 on lg
+   306→- Touch-friendly button targets and spacing
+   307→
+   308→### Components Used:
+   309→- shadcn/ui: Card, CardContent, Button, Badge
+   310→- framer-motion: container/item stagger variants, cardHover scale animation
+   311→- Lucide icons: ArrowLeft, Check, FileText, Loader2
+   312→- sonner: toast notifications
+   313→
+   314→### Quality Checks:
+   315→- ✅ ESLint passes with no errors
+   316→- ✅ Dev server compiles successfully
+   317→- ✅ Component is 'use client'
+   318→- ✅ Store-based navigation (setView, setSelectedTemplate, setCurrentResume)
+   319→- ✅ Resume creation via POST /api/resume on template selection
+   320→- ✅ Loading states with spinner and disabled button
+   321→- ✅ Responsive design
+   322→- ✅ 6 unique CSS-based template previews
+   323→
+   324→---
+   325→
+   326→## Task 9: Resume Preview Component with PDF Export (Completed)
+   327→
+   328→### What was built:
+   329→
+   330→#### 1. Resume Templates Component (`/src/components/resume-templates.tsx`)
+   331→- 'use client' component with a `renderResume` function and 6 complete resume templates
+   332→- **`renderResume(templateId, data)`** function: Takes a template ID and resume data object `{ profile, experiences, education, skills }`, returns JSX for the resume
+   333→- **`TEMPLATE_LIST`** export: Array of `{ id, name, description }` for dropdowns and galleries
+   334→- **`ResumeTemplateData`** interface: Shared type for all template data
+   335→
+   336→**6 Templates:**
+   337→
+   338→1. **Minimal** — Single column, clean lines, simple dividers
+   339→   - Centered name/job title header with contact row
+   340→   - Horizontal dividers between sections
+   341→   - Bullet-point skill list
+   342→   - Font: Inter, 10pt base, 24pt name
+   343→
+   344→2. **Modern** — Two-column with dark sidebar
+   345→   - Dark (#1a1a1a) left sidebar (35% width) with emerald (#10b981) accents
+   346→   - Avatar initials circle, contact info, skill badges in sidebar
+   347→   - Main content area with emerald accent border lines
+   348→   - Skills grouped by category with badge-style tags
+   349→
+   350→3. **Professional** — Traditional centered header, horizontal rules
+   351→   - Centered uppercase name with job title
+   352→   - Pipe-separated contact info row
+   353→   - Centered section headers with horizontal rules
+   354→   - "Position — Company" format for experience entries
+   355→
+   356→4. **Creative** — Left colored sidebar with skill bars
+   357→   - Dark gradient sidebar (32% width) with amber (#f59e0b) accents
+   358→   - Skill bars with visual fill levels (deterministic based on position)
+   359→   - Timeline dots for experience/education entries
+   360→   - Category labels with colored underlines
+   361→
+   362→5. **Executive** — Bold name header, serif accents
+   363→   - Large navy (#1e3a5f) serif header name
+   364→   - Italic serif company/institution names
+   365→   - Bold uppercase section headers with navy underlines
+   366→   - Pill-style skill badges with navy borders
+   367→
+   368→6. **Compact** — Dense layout, 9pt font, tight spacing
+   369→   - Two-column layout (2/3 experience + education, 1/3 skills)
+   370→   - Minimal spacing, 8-9pt font sizes
+   371→   - Skills grouped by category with background badges
+   372→   - Fits maximum content on one page
+   373→
+   374→**Helper utilities:**
+   375→- `formatDate()`: Converts date string to "Mon YYYY" format
+   376→- `dateRange()`: Formats start/end date with "Present" for current positions
+   377→- `Section` component: Consistent section wrapper with title
+   378→
+   379→#### 2. Resume Preview Component (`/src/components/resume-preview.tsx`)
+   380→- 'use client' component with full-screen resume preview
+   381→- **Dark background** (`bg-neutral-900`) with white resume document floating in center
+   382→- **Top toolbar** (sticky, dark themed):
+   383→  - Back button → navigates to 'editor' view (responsive text: "Back to Editor" / "Back")
+   384→  - Template selector dropdown → updates `selectedTemplate` in store
+   385→  - Download PDF button → opens `window.print()` with toast hint about "Save as PDF"
+   386→  - Print button (emerald primary) → opens `window.print()` directly
+   387→- **Resume document area**:
+   388→  - Constrained to `max-w-[794px]` (A4 width at 96dpi)
+   389→  - Minimum height of 1123px (A4 height at 96dpi)
+   390→  - White background with heavy shadow (`shadow-2xl`)
+   391→  - Wrapped in `resume-print-area` class for print targeting
+   392→- **Footer hint** with keyboard shortcut: `Ctrl+P` to print/save as PDF
+   393→- **Framer Motion** entrance animation (fade + scale)
+   394→- **Print-specific behavior**:
+   395→  - Toolbar (`no-print` class) hidden during print
+   396→  - Footer hint hidden during print
+   397→  - Resume takes full page via CSS print media query
+   398→
+   399→#### 3. Updated Page Component (`/src/app/page.tsx`)
+   400→- Added import for `ResumePreview` component
+   401→- Added `case 'preview'` to view router switch statement
+   402→- Renders `<ResumePreview />` when `currentView === 'preview'`
+   403→
+   404→#### 4. Print-Specific CSS (`/src/app/globals.css`)
+   405→Added `@media print` block:
+   406→- Hides all body elements by default (`visibility: hidden`)
+   407→- Makes `.resume-print-area` and children visible (`visibility: visible`)
+   408→- Positions resume at top-left with full width
+   409→- Removes shadows and margins from resume
+   410→- Hides `.no-print` elements completely (`display: none !important`)
+   411→- Sets white background for body
+   412→- Configures `@page { size: A4; margin: 0; }` for proper PDF output
+   413→
+   414→### Design Details:
+   415→- Dark neutral-900 background creates document-on-desk visual effect
+   416→- Toolbar uses neutral-800 with backdrop blur for polish
+   417→- Template selector uses neutral-700 background to match dark theme
+   418→- Print button uses emerald-600 (primary color) for prominence
+   419→- Resume document has 2xl shadow for depth
+   420→- Responsive: toolbar text shortens on mobile, buttons stack appropriately
+   421→
+   422→### Components Used:
+   423→- shadcn/ui: Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+   424→- framer-motion: entrance animation (opacity + scale)
+   425→- Lucide icons: ArrowLeft, Download, Printer
+   426→- sonner: toast notifications
+   427→
+   428→### Quality Checks:
+   429→- ✅ ESLint passes with no errors
+   430→- ✅ Dev server compiles successfully
+   431→- ✅ All components are 'use client'
+   432→- ✅ Store-based navigation (setView, setSelectedTemplate)
+   433→- ✅ Print CSS properly isolates resume content
+   434→- ✅ 6 complete templates with professional typography
+   435→- ✅ Responsive toolbar design
+   436→- ✅ A4 page dimensions (794px × 1123px at 96dpi)
+   437→
+   438→---
+   439→
+   440→## Task 8: Resume Editor Component with AI Assistant (Completed)
+   441→
+   442→### What was built:
+   443→
+   444→#### 1. Resume Templates Component (`/src/components/resume-templates.tsx`)
+   445→- 'use client' component exporting `renderResume(templateId, data)` function and `ResumeRenderData` interface
+   446→- **6 complete template layouts**, each receiving the same data but rendering differently:
+   447→
+   448→1. **Minimal** — Single column, clean lines, simple headers
+   449→   - Centered name/job title with contact info row
+   450→   - Horizontal dividers between sections
+   451→   - Bordered skill tags
+   452→   - Font: Georgia serif
+   453→
+   454→2. **Modern** — Two-column with dark sidebar
+   455→   - Dark (#1a1a1a) left sidebar (220px) with emerald (#10b981) accents
+   456→   - Name split across two lines (first name emerald, last name white)
+   457→   - Contact info with labeled sections in sidebar
+   458→   - Skill progress bars in sidebar
+   459→   - Main content with emerald-accented section headers and left border lines on entries
+   460→
+   461→3. **Professional** — Traditional centered format
+   462→   - Centered uppercase name with 3px letter spacing
+   463→   - Pipe-separated contact info row
+   464→   - Italic institution/company names
+   465→   - Justified summary text
+   466→   - Bullet-joined skill list (• separated)
+   467→
+   468→4. **Creative** — Colored accent sidebar
+   469→   - 8px emerald green accent sidebar
+   470→   - Emoji-prefixed contact info (✉ ☎ 📍 🌐 🔗 💻)
+   471→   - Emerald-bordered summary box with light green background
+   472→   - Timeline dots (green circles) for experience/education entries
+   473→   - Pill-style skill badges with green background
+   474→
+   475→5. **Executive** — Bold header, strong typography
+   476→   - Full-width dark (#1a1a1a) header block with white text and emerald accents
+   477→   - Emerald left-border accent on section headers
+   478→   - Uppercase section headers with 2px letter spacing
+   479→   - Large 34px bold name in header
+   480→   - Pill-style competency badges
+   481→
+   482→6. **Compact** — Dense layout, smaller fonts
+   483→   - Two-column layout (main content + 200px sidebar)
+   484→   - 10px base font size, 9px for secondary text
+   485→   - Skills grouped by category in sidebar with colored dot legend
+   486→   - Minimal spacing throughout
+   487→   - Maximum content density
+   488→
+   489→**Helper utilities:**
+   490→- `formatDateRange()`: Formats start/end dates with "Present" for current positions
+   491→- `categoryColor()`: Returns hex color for skill categories (technical=emerald, soft=indigo, language=amber, other=violet)
+   492→
+   493→#### 2. Resume Editor Component (`/src/components/resume-editor.tsx`)
+   494→- 'use client' component with split-pane layout and AI integration
+   495→- **Dark theme with emerald green accents** matching the app design system
+   496→
+   497→**Header (sticky):**
+   498→- Back button → navigates to 'dashboard' view
+   499→- "Edit Resume" title with template name Badge
+   500→- Auto-save indicator (spinner + "Saving…" text when debounced save is in progress)
+   501→- Template selector dropdown (6 templates)
+   502→- AI Assist button (informational toast)
+   503→- Preview toggle button (mobile only)
+   504→
+   505→**Left Panel (Editor):**
+   506→Scrollable form with all resume sections using collapsible panels:
+   507→
+   508→1. **Personal Info** (collapsible, default open): firstName, lastName, jobTitle, email, phone, location, website, linkedin, github — all fields update profile in store and save via PUT /api/profile on blur
+   509→
+   510→2. **Summary** (collapsible, default open): Textarea with "AI Enhance" button → calls /api/ai/generate with type "summary", context includes profile data, experiences, skills, and existing summary
+   511→
+   512→3. **Experience** (collapsible, default open): List of experience cards, each with:
+   513→   - company, position, location, startDate (month picker), endDate (month picker), current checkbox
+   514→   - Description textarea with "AI Generate Description" button → calls /api/ai/generate with type "experience"
+   515→   - Delete button (red on hover)
+   516→   - "Add Experience" dashed-border button at bottom → POST /api/profile/experience
+   517→
+   518→4. **Education** (collapsible, default open): List of education cards, each with:
+   519→   - institution, degree, field, location, startDate, endDate, gpa, description
+   520→   - Delete button
+   521→   - "Add Education" dashed-border button at bottom → POST /api/profile/education
+   522→
+   523→5. **Skills** (collapsible, default open):
+   524→   - "AI Suggest Skills" button → calls /api/ai/generate with type "skills", adds returned skills via POST /api/profile/skill (with duplicate detection)
+   525→   - Badge-style skill display with category color dots and delete X button
+   526→   - Manual add form: name input + category select (Technical/Soft Skill/Language/Other) + Add button
+   527→   - Category color legend at bottom
+   528→
+   529→**Right Panel (Live Preview):**
+   530→- Shows a scaled-down (0.55x) A4-sized resume preview (794px × 1123px)
+   531→- White background with shadow-2xl on dark muted/30 background
+   532→- Updates in real-time as user types
+   533→- "Live Preview" label with Eye icon
+   534→- Template rendered using `renderResume()` from resume-templates.tsx
+   535→
+   536→**Mobile Layout:**
+   537→- Panels stack vertically (editor on top, preview hidden)
+   538→- Preview toggle button in header switches between editor and preview views
+   539→- "Back to Editor" button in preview panel
+   540→
+   541→**Auto-Save:**
+   542→- Debounced (1.5s) PUT to /api/resume whenever profile, experiences, education, or skills change
+   543→- Saves resume content as JSON string containing all data
+   544→- Uses refs to keep latest data in sync for the debounced save
+   545→- Visual "Saving…" indicator in header
+   546→
+   547→**Data Flow:**
+   548→- Fetches profile data from /api/profile on mount
+   549→- All CRUD operations hit their respective API endpoints (/api/profile/experience, /api/profile/education, /api/profile/skill)
+   550→- Store is updated optimistically for immediate UI response
+   551→- API calls follow up for persistence
+   552→
+   553→#### 3. Supporting Components (recreated/updated)
+   554→
+   555→**Template Gallery** (`/src/components/template-gallery.tsx`):
+   556→- 6 template cards with name, description, and "Use Template" button
+   557→- Creates resume via POST /api/resume on selection
+   558→- Sets store template and navigates to editor
+   559→- Framer Motion staggered entrance animations
+   560→- Selected template shows Badge + primary border
+   561→
+   562→**Resume Preview** (`/src/components/resume-preview.tsx`):
+   563→- Full-screen dark preview with toolbar
+   564→- Print/PDF support via window.print()
+   565→- Template selector in toolbar
+   566→- Uses renderResume() for template rendering
+   567→- A4 dimensions with print-specific CSS
+   568→
+   569→#### 4. Updated Page Component (`/src/app/page.tsx`)
+   570→- Added import for `ResumeEditor` component
+   571→- Added `case 'editor'` to view router switch statement
+   572→- Renders `<ResumeEditor />` when `currentView === 'editor'`
+   573→
+   574→### Components Used:
+   575→- shadcn/ui: Input, Label, Button, Textarea, Card, CardContent, CardHeader, CardTitle, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, ScrollArea, Separator
+   576→- framer-motion: fadeIn animation variants
+   577→- Lucide icons: ArrowLeft, Sparkles, Eye, Plus, Trash2, ChevronDown, Loader2
+   578→- sonner: toast notifications for all CRUD and AI operations
+   579→
+   580→### Quality Checks:
+   581→- ✅ ESLint passes with no errors or warnings
+   582→- ✅ Dev server compiles successfully
+   583→- ✅ All components are 'use client'
+   584→- ✅ Store-based navigation (setView, setCurrentResume, setSelectedTemplate)
+   585→- ✅ Auto-save with debounced PUT to /api/resume
+   586→- ✅ AI integration for summary, experience descriptions, and skill suggestions
+   587→- ✅ Real-time preview updates
+   588→- ✅ Responsive design (mobile toggle between editor/preview)
+   589→- ✅ 6 complete template renderers with professional typography
+   590→- ✅ CRUD operations for experience, education, and skills via API endpoints
+   591→

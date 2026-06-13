@@ -1,0 +1,701 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import type { ProfileData, ExperienceData, EducationData, SkillData } from '@/lib/types';
+     4→     4→
+     5→     5→// ── Types ──────────────────────────────────────────────────────
+     6→     6→export interface ResumeRenderData {
+     7→     7→  profile: ProfileData | null;
+     8→     8→  experiences: ExperienceData[];
+     9→     9→  education: EducationData[];
+    10→    10→  skills: SkillData[];
+    11→    11→}
+    12→    12→
+    13→    13→export interface ResumeTemplateData {
+    14→    14→  profile: ProfileData | null;
+    15→    15→  experiences: ExperienceData[];
+    16→    16→  education: EducationData[];
+    17→    17→  skills: SkillData[];
+    18→    18→}
+    19→    19→
+    20→    20→// ── Helper: Format date ────────────────────────────────────────
+    21→    21→function formatDate(dateStr?: string): string {
+    22→    22→  if (!dateStr) return '';
+    23→    23→  const d = new Date(dateStr);
+    24→    24→  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    25→    25→}
+    26→    26→
+    27→    27→// ── Helper: Date range ─────────────────────────────────────────
+    28→    28→function dateRange(start?: string, end?: string, current?: boolean): string {
+    29→    29→  const s = formatDate(start);
+    30→    30→  const e = current ? 'Present' : formatDate(end);
+    31→    31→  if (!s) return '';
+    32→    32→  return `${s} – ${e}`;
+    33→    33→}
+    34→    34→
+    35→    35→// ── Helper: Section wrapper ────────────────────────────────────
+    36→    36→function Section({
+    37→    37→  title,
+    38→    38→  children,
+    39→    39→  style,
+    40→    40→}: {
+    41→    41→  title: string;
+    42→    42→  children: React.ReactNode;
+    43→    43→  style?: React.CSSProperties;
+    44→    44→}) {
+    45→    45→  return (
+    46→    46→    <div style={{ marginBottom: 14, ...style }}>
+    47→    47→      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, ...style }}>
+    48→    48→        {title}
+    49→    49→      </div>
+    50→    50→      {children}
+    51→    51→    </div>
+    52→    52→  );
+    53→    53→}
+    54→    54→
+    55→    55→// ════════════════════════════════════════════════════════════════
+    56→    56→// 1. MINIMAL TEMPLATE — Single column, clean lines, simple dividers
+    57→    57→// ════════════════════════════════════════════════════════════════
+    58→    58→function MinimalTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+    59→    59→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+    60→    60→  const contactItems = [
+    61→    61→    profile?.email,
+    62→    62→    profile?.phone,
+    63→    63→    profile?.location,
+    64→    64→    profile?.website,
+    65→    65→    profile?.linkedin,
+    66→    66→    profile?.github,
+    67→    67→  ].filter(Boolean);
+    68→    68→
+    69→    69→  return (
+    70→    70→    <div style={{ fontFamily: "'Inter', sans-serif", color: '#1a1a1a', background: 'white', padding: '40px 48px', fontSize: 10, lineHeight: 1.5, minHeight: '297mm' }}>
+    71→    71→      {/* Header */}
+    72→    72→      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+    73→    73→        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4, color: '#111' }}>{name}</h1>
+    74→    74→        {profile?.jobTitle && <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>{profile.jobTitle}</div>}
+    75→    75→        <div style={{ fontSize: 9, color: '#777', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '4px 12px' }}>
+    76→    76→          {contactItems.map((item, i) => (
+    77→    77→            <span key={i}>{item}</span>
+    78→    78→          ))}
+    79→    79→        </div>
+    80→    80→      </div>
+    81→    81→
+    82→    82→      <div style={{ borderTop: '1px solid #ddd', marginBottom: 14 }} />
+    83→    83→
+    84→    84→      {/* Summary */}
+    85→    85→      {profile?.summary && (
+    86→    86→        <Section title="Summary" style={{ borderBottom: '1px solid #eee', paddingBottom: 10 }}>
+    87→    87→          <p style={{ fontSize: 10, color: '#444', margin: 0 }}>{profile.summary}</p>
+    88→    88→        </Section>
+    89→    89→      )}
+    90→    90→
+    91→    91→      {/* Experience */}
+    92→    92→      {experiences.length > 0 && (
+    93→    93→        <Section title="Experience" style={{ borderBottom: '1px solid #eee', paddingBottom: 10 }}>
+    94→    94→          {experiences.map((exp) => (
+    95→    95→            <div key={exp.id} style={{ marginBottom: 10 }}>
+    96→    96→              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+    97→    97→                <h3 style={{ fontSize: 11, fontWeight: 600, margin: 0 }}>{exp.position}</h3>
+    98→    98→                <span style={{ fontSize: 9, color: '#888' }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+    99→    99→              </div>
+   100→   100→              <div style={{ fontSize: 10, color: '#555' }}>{exp.company}{exp.location ? `, ${exp.location}` : ''}</div>
+   101→   101→              {exp.description && (
+   102→   102→                <div style={{ fontSize: 9.5, color: '#444', marginTop: 3, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   103→   103→              )}
+   104→   104→            </div>
+   105→   105→          ))}
+   106→   106→        </Section>
+   107→   107→      )}
+   108→   108→
+   109→   109→      {/* Education */}
+   110→   110→      {education.length > 0 && (
+   111→   111→        <Section title="Education" style={{ borderBottom: '1px solid #eee', paddingBottom: 10 }}>
+   112→   112→          {education.map((edu) => (
+   113→   113→            <div key={edu.id} style={{ marginBottom: 8 }}>
+   114→   114→              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   115→   115→                <h3 style={{ fontSize: 11, fontWeight: 600, margin: 0 }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</h3>
+   116→   116→                <span style={{ fontSize: 9, color: '#888' }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   117→   117→              </div>
+   118→   118→              <div style={{ fontSize: 10, color: '#555' }}>{edu.institution}{edu.location ? `, ${edu.location}` : ''}</div>
+   119→   119→              {edu.gpa && <div style={{ fontSize: 9, color: '#666' }}>GPA: {edu.gpa}</div>}
+   120→   120→            </div>
+   121→   121→          ))}
+   122→   122→        </Section>
+   123→   123→      )}
+   124→   124→
+   125→   125→      {/* Skills */}
+   126→   126→      {skills.length > 0 && (
+   127→   127→        <Section title="Skills">
+   128→   128→          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
+   129→   129→            {skills.map((skill) => (
+   130→   130→              <span key={skill.id} style={{ fontSize: 9.5, color: '#444' }}>
+   131→   131→                {skill.name}{skills.indexOf(skill) < skills.length - 1 ? ' •' : ''}
+   132→   132→              </span>
+   133→   133→            ))}
+   134→   134→          </div>
+   135→   135→        </Section>
+   136→   136→      )}
+   137→   137→    </div>
+   138→   138→  );
+   139→   139→}
+   140→   140→
+   141→   141→// ════════════════════════════════════════════════════════════════
+   142→   142→// 2. MODERN TEMPLATE — Two-column with colored sidebar
+   143→   143→// ════════════════════════════════════════════════════════════════
+   144→   144→function ModernTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+   145→   145→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+   146→   146→  const accentColor = '#10b981';
+   147→   147→
+   148→   148→  const sidebarItems = [
+   149→   149→    { label: 'Email', value: profile?.email },
+   150→   150→    { label: 'Phone', value: profile?.phone },
+   151→   151→    { label: 'Location', value: profile?.location },
+   152→   152→    { label: 'Website', value: profile?.website },
+   153→   153→    { label: 'LinkedIn', value: profile?.linkedin },
+   154→   154→    { label: 'GitHub', value: profile?.github },
+   155→   155→  ].filter(item => item.value);
+   156→   156→
+   157→   157→  const skillsByCategory = skills.reduce<Record<string, SkillData[]>>((acc, skill) => {
+   158→   158→    const cat = skill.category || 'other';
+   159→   159→    if (!acc[cat]) acc[cat] = [];
+   160→   160→    acc[cat].push(skill);
+   161→   161→    return acc;
+   162→   162→  }, {});
+   163→   163→
+   164→   164→  const categoryLabels: Record<string, string> = {
+   165→   165→    technical: 'Technical',
+   166→   166→    soft: 'Soft Skills',
+   167→   167→    language: 'Languages',
+   168→   168→    other: 'Other',
+   169→   169→  };
+   170→   170→
+   171→   171→  return (
+   172→   172→    <div style={{ fontFamily: "'Inter', sans-serif", color: '#1a1a1a', background: 'white', display: 'flex', minHeight: '297mm', fontSize: 10, lineHeight: 1.5 }}>
+   173→   173→      {/* Sidebar */}
+   174→   174→      <div style={{ width: '35%', background: '#1a1a1a', color: '#e5e5e5', padding: '36px 24px' }}>
+   175→   175→        {/* Avatar / Name */}
+   176→   176→        <div style={{ marginBottom: 24 }}>
+   177→   177→          <div style={{ width: 60, height: 60, borderRadius: '50%', background: accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, fontSize: 22, fontWeight: 700, color: 'white' }}>
+   178→   178→            {name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+   179→   179→          </div>
+   180→   180→          <h1 style={{ fontSize: 18, fontWeight: 700, color: 'white', margin: '0 0 2px' }}>{name}</h1>
+   181→   181→          {profile?.jobTitle && <div style={{ fontSize: 10, color: accentColor, fontWeight: 500 }}>{profile.jobTitle}</div>}
+   182→   182→        </div>
+   183→   183→
+   184→   184→        {/* Contact */}
+   185→   185→        {sidebarItems.length > 0 && (
+   186→   186→          <div style={{ marginBottom: 20 }}>
+   187→   187→            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, marginBottom: 8 }}>Contact</div>
+   188→   188→            {sidebarItems.map((item, i) => (
+   189→   189→              <div key={i} style={{ marginBottom: 6, fontSize: 9 }}>
+   190→   190→                <div style={{ color: '#999', fontSize: 8, marginBottom: 1 }}>{item.label}</div>
+   191→   191→                <div style={{ color: '#ddd', wordBreak: 'break-all' }}>{item.value}</div>
+   192→   192→              </div>
+   193→   193→            ))}
+   194→   194→          </div>
+   195→   195→        )}
+   196→   196→
+   197→   197→        {/* Skills */}
+   198→   198→        {skills.length > 0 && (
+   199→   199→          <div>
+   200→   200→            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, marginBottom: 8 }}>Skills</div>
+   201→   201→            {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+   202→   202→              <div key={category} style={{ marginBottom: 10 }}>
+   203→   203→                <div style={{ fontSize: 8, color: '#999', marginBottom: 3 }}>{categoryLabels[category] || category}</div>
+   204→   204→                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+   205→   205→                  {catSkills.map(skill => (
+   206→   206→                    <span key={skill.id} style={{ fontSize: 8.5, background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: 3, color: '#ccc' }}>
+   207→   207→                      {skill.name}
+   208→   208→                    </span>
+   209→   209→                  ))}
+   210→   210→                </div>
+   211→   211→              </div>
+   212→   212→            ))}
+   213→   213→          </div>
+   214→   214→        )}
+   215→   215→      </div>
+   216→   216→
+   217→   217→      {/* Main Content */}
+   218→   218→      <div style={{ flex: 1, padding: '36px 32px' }}>
+   219→   219→        {/* Summary */}
+   220→   220→        {profile?.summary && (
+   221→   221→          <div style={{ marginBottom: 18 }}>
+   222→   222→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 6 }}>Profile</div>
+   223→   223→            <p style={{ fontSize: 10, color: '#444', margin: 0, lineHeight: 1.6 }}>{profile.summary}</p>
+   224→   224→          </div>
+   225→   225→        )}
+   226→   226→
+   227→   227→        {/* Experience */}
+   228→   228→        {experiences.length > 0 && (
+   229→   229→          <div style={{ marginBottom: 18 }}>
+   230→   230→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 8 }}>Experience</div>
+   231→   231→            {experiences.map((exp, i) => (
+   232→   232→              <div key={exp.id} style={{ marginBottom: i < experiences.length - 1 ? 12 : 0, paddingLeft: 12, borderLeft: `2px solid ${accentColor}30` }}>
+   233→   233→                <h3 style={{ fontSize: 11, fontWeight: 600, margin: '0 0 1px' }}>{exp.position}</h3>
+   234→   234→                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5 }}>
+   235→   235→                  <span style={{ color: '#555' }}>{exp.company}{exp.location ? `, ${exp.location}` : ''}</span>
+   236→   236→                  <span style={{ color: '#888' }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+   237→   237→                </div>
+   238→   238→                {exp.description && (
+   239→   239→                  <div style={{ fontSize: 9.5, color: '#444', marginTop: 3, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   240→   240→                )}
+   241→   241→              </div>
+   242→   242→            ))}
+   243→   243→          </div>
+   244→   244→        )}
+   245→   245→
+   246→   246→        {/* Education */}
+   247→   247→        {education.length > 0 && (
+   248→   248→          <div>
+   249→   249→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 8 }}>Education</div>
+   250→   250→            {education.map((edu, i) => (
+   251→   251→              <div key={edu.id} style={{ marginBottom: i < education.length - 1 ? 10 : 0, paddingLeft: 12, borderLeft: `2px solid ${accentColor}30` }}>
+   252→   252→                <h3 style={{ fontSize: 11, fontWeight: 600, margin: '0 0 1px' }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</h3>
+   253→   253→                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5 }}>
+   254→   254→                  <span style={{ color: '#555' }}>{edu.institution}{edu.location ? `, ${edu.location}` : ''}</span>
+   255→   255→                  <span style={{ color: '#888' }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   256→   256→                </div>
+   257→   257→                {edu.gpa && <div style={{ fontSize: 9, color: '#666' }}>GPA: {edu.gpa}</div>}
+   258→   258→              </div>
+   259→   259→            ))}
+   260→   260→          </div>
+   261→   261→        )}
+   262→   262→      </div>
+   263→   263→    </div>
+   264→   264→  );
+   265→   265→}
+   266→   266→
+   267→   267→// ════════════════════════════════════════════════════════════════
+   268→   268→// 3. PROFESSIONAL TEMPLATE — Traditional centered header, horizontal rules
+   269→   269→// ════════════════════════════════════════════════════════════════
+   270→   270→function ProfessionalTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+   271→   271→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+   272→   272→  const contactItems = [
+   273→   273→    profile?.email,
+   274→   274→    profile?.phone,
+   275→   275→    profile?.location,
+   276→   276→  ].filter(Boolean);
+   277→   277→  const webItems = [
+   278→   278→    profile?.website,
+   279→   279→    profile?.linkedin,
+   280→   280→    profile?.github,
+   281→   281→  ].filter(Boolean);
+   282→   282→
+   283→   283→  return (
+   284→   284→    <div style={{ fontFamily: "'Inter', sans-serif", color: '#1a1a1a', background: 'white', padding: '40px 48px', fontSize: 10, lineHeight: 1.5, minHeight: '297mm' }}>
+   285→   285→      {/* Header */}
+   286→   286→      <div style={{ textAlign: 'center', marginBottom: 4 }}>
+   287→   287→        <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '0.02em', margin: '0 0 4px', textTransform: 'uppercase' }}>{name}</h1>
+   288→   288→        {profile?.jobTitle && <div style={{ fontSize: 12, color: '#555', fontWeight: 400, marginBottom: 8 }}>{profile.jobTitle}</div>}
+   289→   289→      </div>
+   290→   290→      <div style={{ textAlign: 'center', fontSize: 9, color: '#666', marginBottom: 4 }}>
+   291→   291→        {contactItems.map((item, i) => (
+   292→   292→          <span key={i}>{item}{i < contactItems.length - 1 ? '  |  ' : ''}</span>
+   293→   293→        ))}
+   294→   294→        {webItems.length > 0 && contactItems.length > 0 && '  |  '}
+   295→   295→        {webItems.map((item, i) => (
+   296→   296→          <span key={i}>{item}{i < webItems.length - 1 ? '  |  ' : ''}</span>
+   297→   297→        ))}
+   298→   298→      </div>
+   299→   299→
+   300→   300→      <hr style={{ border: 'none', borderTop: '2px solid #1a1a1a', margin: '12px 0' }} />
+   301→   301→
+   302→   302→      {/* Summary */}
+   303→   303→      {profile?.summary && (
+   304→   304→        <div style={{ marginBottom: 14 }}>
+   305→   305→          <p style={{ fontSize: 10, color: '#333', margin: 0, textAlign: 'center', lineHeight: 1.6 }}>{profile.summary}</p>
+   306→   306→        </div>
+   307→   307→      )}
+   308→   308→
+   309→   309→      {/* Experience */}
+   310→   310→      {experiences.length > 0 && (
+   311→   311→        <div style={{ marginBottom: 14 }}>
+   312→   312→          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', marginBottom: 10, marginTop: 4 }}>Professional Experience</div>
+   313→   313→          <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0 0 10px' }} />
+   314→   314→          {experiences.map((exp) => (
+   315→   315→            <div key={exp.id} style={{ marginBottom: 10 }}>
+   316→   316→              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   317→   317→                <div>
+   318→   318→                  <span style={{ fontSize: 11, fontWeight: 700 }}>{exp.position}</span>
+   319→   319→                  <span style={{ fontSize: 10, color: '#555', marginLeft: 6 }}>— {exp.company}{exp.location ? `, ${exp.location}` : ''}</span>
+   320→   320→                </div>
+   321→   321→                <span style={{ fontSize: 9, color: '#888', fontWeight: 500 }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+   322→   322→              </div>
+   323→   323→              {exp.description && (
+   324→   324→                <div style={{ fontSize: 9.5, color: '#444', marginTop: 3, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   325→   325→              )}
+   326→   326→            </div>
+   327→   327→          ))}
+   328→   328→        </div>
+   329→   329→      )}
+   330→   330→
+   331→   331→      {/* Education */}
+   332→   332→      {education.length > 0 && (
+   333→   333→        <div style={{ marginBottom: 14 }}>
+   334→   334→          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', marginBottom: 10, marginTop: 4 }}>Education</div>
+   335→   335→          <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0 0 10px' }} />
+   336→   336→          {education.map((edu) => (
+   337→   337→            <div key={edu.id} style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   338→   338→              <div>
+   339→   339→                <span style={{ fontSize: 11, fontWeight: 700 }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</span>
+   340→   340→                <span style={{ fontSize: 10, color: '#555', marginLeft: 6 }}>— {edu.institution}{edu.location ? `, ${edu.location}` : ''}</span>
+   341→   341→              </div>
+   342→   342→              <span style={{ fontSize: 9, color: '#888', fontWeight: 500 }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   343→   343→            </div>
+   344→   344→          ))}
+   345→   345→        </div>
+   346→   346→      )}
+   347→   347→
+   348→   348→      {/* Skills */}
+   349→   349→      {skills.length > 0 && (
+   350→   350→        <div>
+   351→   351→          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', marginBottom: 10, marginTop: 4 }}>Skills</div>
+   352→   352→          <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0 0 10px' }} />
+   353→   353→          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 6px', justifyContent: 'center' }}>
+   354→   354→            {skills.map((skill) => (
+   355→   355→              <span key={skill.id} style={{ fontSize: 9.5, color: '#444' }}>
+   356→   356→                {skill.name}{skills.indexOf(skill) < skills.length - 1 ? ',' : ''}
+   357→   357→              </span>
+   358→   358→            ))}
+   359→   359→          </div>
+   360→   360→        </div>
+   361→   361→      )}
+   362→   362→    </div>
+   363→   363→  );
+   364→   364→}
+   365→   365→
+   366→   366→// ════════════════════════════════════════════════════════════════
+   367→   367→// 4. CREATIVE TEMPLATE — Left colored sidebar, modern typography, skill bars
+   368→   368→// ════════════════════════════════════════════════════════════════
+   369→   369→function CreativeTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+   370→   370→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+   371→   371→  const accentColor = '#f59e0b';
+   372→   372→
+   373→   373→  const contactItems = [
+   374→   374→    { icon: '✉', value: profile?.email },
+   375→   375→    { icon: '☎', value: profile?.phone },
+   376→   376→    { icon: '📍', value: profile?.location },
+   377→   377→    { icon: '🌐', value: profile?.website },
+   378→   378→    { icon: 'in', value: profile?.linkedin },
+   379→   379→    { icon: '⌨', value: profile?.github },
+   380→   380→  ].filter(item => item.value);
+   381→   381→
+   382→   382→  const skillLevels: Record<string, number> = {};
+   383→   383→  skills.forEach((skill, i) => {
+   384→   384→    skillLevels[skill.name] = 70 + (i * 7) % 25;
+   385→   385→  });
+   386→   386→
+   387→   387→  return (
+   388→   388→    <div style={{ fontFamily: "'Inter', sans-serif", color: '#1a1a1a', background: 'white', display: 'flex', minHeight: '297mm', fontSize: 10, lineHeight: 1.5 }}>
+   389→   389→      {/* Sidebar */}
+   390→   390→      <div style={{ width: '32%', background: `linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%)`, color: '#e5e5e5', padding: '36px 20px' }}>
+   391→   391→        {/* Name */}
+   392→   392→        <div style={{ marginBottom: 24 }}>
+   393→   393→          <h1 style={{ fontSize: 20, fontWeight: 800, color: 'white', margin: '0 0 4px', lineHeight: 1.2 }}>{name}</h1>
+   394→   394→          {profile?.jobTitle && <div style={{ fontSize: 10, color: accentColor, fontWeight: 500, letterSpacing: '0.02em' }}>{profile.jobTitle}</div>}
+   395→   395→        </div>
+   396→   396→
+   397→   397→        {/* Contact */}
+   398→   398→        {contactItems.length > 0 && (
+   399→   399→          <div style={{ marginBottom: 22 }}>
+   400→   400→            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: accentColor, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}` }}>Contact</div>
+   401→   401→            {contactItems.map((item, i) => (
+   402→   402→              <div key={i} style={{ marginBottom: 6, fontSize: 9, display: 'flex', gap: 6, alignItems: 'baseline' }}>
+   403→   403→                <span style={{ color: accentColor, fontSize: 8, fontWeight: 600, minWidth: 12 }}>{item.icon}</span>
+   404→   404→                <span style={{ color: '#ccc', wordBreak: 'break-all' }}>{item.value}</span>
+   405→   405→              </div>
+   406→   406→            ))}
+   407→   407→          </div>
+   408→   408→        )}
+   409→   409→
+   410→   410→        {/* Skills with bars */}
+   411→   411→        {skills.length > 0 && (
+   412→   412→          <div>
+   413→   413→            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: accentColor, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}` }}>Skills</div>
+   414→   414→            {skills.map((skill) => (
+   415→   415→              <div key={skill.id} style={{ marginBottom: 6 }}>
+   416→   416→                <div style={{ fontSize: 9, color: '#ccc', marginBottom: 2 }}>{skill.name}</div>
+   417→   417→                <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+   418→   418→                  <div style={{ height: '100%', width: `${skillLevels[skill.name] || 75}%`, background: accentColor, borderRadius: 2 }} />
+   419→   419→                </div>
+   420→   420→              </div>
+   421→   421→            ))}
+   422→   422→          </div>
+   423→   423→        )}
+   424→   424→      </div>
+   425→   425→
+   426→   426→      {/* Main Content */}
+   427→   427→      <div style={{ flex: 1, padding: '36px 28px' }}>
+   428→   428→        {/* Summary */}
+   429→   429→        {profile?.summary && (
+   430→   430→          <div style={{ marginBottom: 20 }}>
+   431→   431→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 6, paddingBottom: 4, borderBottom: `2px solid ${accentColor}`, display: 'inline-block' }}>About Me</div>
+   432→   432→            <p style={{ fontSize: 10, color: '#444', margin: 0, lineHeight: 1.6 }}>{profile.summary}</p>
+   433→   433→          </div>
+   434→   434→        )}
+   435→   435→
+   436→   436→        {/* Experience */}
+   437→   437→        {experiences.length > 0 && (
+   438→   438→          <div style={{ marginBottom: 20 }}>
+   439→   439→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}`, display: 'inline-block' }}>Experience</div>
+   440→   440→            {experiences.map((exp, i) => (
+   441→   441→              <div key={exp.id} style={{ marginBottom: i < experiences.length - 1 ? 14 : 0, position: 'relative', paddingLeft: 14 }}>
+   442→   442→                <div style={{ position: 'absolute', left: 0, top: 5, width: 7, height: 7, borderRadius: '50%', background: accentColor }} />
+   443→   443→                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   444→   444→                  <h3 style={{ fontSize: 11, fontWeight: 600, margin: 0 }}>{exp.position}</h3>
+   445→   445→                  <span style={{ fontSize: 8.5, color: '#888', background: '#f5f5f5', padding: '1px 6px', borderRadius: 3 }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+   446→   446→                </div>
+   447→   447→                <div style={{ fontSize: 9.5, color: '#666', fontWeight: 500 }}>{exp.company}{exp.location ? ` · ${exp.location}` : ''}</div>
+   448→   448→                {exp.description && (
+   449→   449→                  <div style={{ fontSize: 9.5, color: '#444', marginTop: 3, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   450→   450→                )}
+   451→   451→              </div>
+   452→   452→            ))}
+   453→   453→          </div>
+   454→   454→        )}
+   455→   455→
+   456→   456→        {/* Education */}
+   457→   457→        {education.length > 0 && (
+   458→   458→          <div>
+   459→   459→            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}`, display: 'inline-block' }}>Education</div>
+   460→   460→            {education.map((edu, i) => (
+   461→   461→              <div key={edu.id} style={{ marginBottom: i < education.length - 1 ? 10 : 0, position: 'relative', paddingLeft: 14 }}>
+   462→   462→                <div style={{ position: 'absolute', left: 0, top: 5, width: 7, height: 7, borderRadius: '50%', background: accentColor }} />
+   463→   463→                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   464→   464→                  <h3 style={{ fontSize: 11, fontWeight: 600, margin: 0 }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</h3>
+   465→   465→                  <span style={{ fontSize: 8.5, color: '#888', background: '#f5f5f5', padding: '1px 6px', borderRadius: 3 }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   466→   466→                </div>
+   467→   467→                <div style={{ fontSize: 9.5, color: '#666' }}>{edu.institution}{edu.location ? ` · ${edu.location}` : ''}</div>
+   468→   468→                {edu.gpa && <div style={{ fontSize: 9, color: '#666' }}>GPA: {edu.gpa}</div>}
+   469→   469→              </div>
+   470→   470→            ))}
+   471→   471→          </div>
+   472→   472→        )}
+   473→   473→      </div>
+   474→   474→    </div>
+   475→   475→  );
+   476→   476→}
+   477→   477→
+   478→   478→// ════════════════════════════════════════════════════════════════
+   479→   479→// 5. EXECUTIVE TEMPLATE — Bold name header, serif accents, strong section headers
+   480→   480→// ════════════════════════════════════════════════════════════════
+   481→   481→function ExecutiveTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+   482→   482→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+   483→   483→  const contactItems = [
+   484→   484→    profile?.email,
+   485→   485→    profile?.phone,
+   486→   486→    profile?.location,
+   487→   487→  ].filter(Boolean);
+   488→   488→  const webItems = [profile?.website, profile?.linkedin, profile?.github].filter(Boolean);
+   489→   489→  const accentColor = '#1e3a5f';
+   490→   490→
+   491→   491→  return (
+   492→   492→    <div style={{ fontFamily: "'Inter', Georgia, serif", color: '#1a1a1a', background: 'white', padding: '40px 48px', fontSize: 10, lineHeight: 1.5, minHeight: '297mm' }}>
+   493→   493→      {/* Header */}
+   494→   494→      <div style={{ marginBottom: 6 }}>
+   495→   495→        <h1 style={{ fontSize: 32, fontWeight: 800, color: accentColor, margin: 0, letterSpacing: '-0.02em', fontFamily: 'Georgia, serif' }}>{name}</h1>
+   496→   496→        {profile?.jobTitle && <div style={{ fontSize: 13, color: '#666', fontFamily: 'Georgia, serif', fontStyle: 'italic', marginTop: 2 }}>{profile.jobTitle}</div>}
+   497→   497→      </div>
+   498→   498→
+   499→   499→      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#555', marginBottom: 4, paddingBottom: 8, borderBottom: `3px solid ${accentColor}` }}>
+   500→   500→        <div>{contactItems.join('  •  ')}</div>
+   501→   501→        <div>{webItems.join('  •  ')}</div>
+   502→   502→      </div>
+   503→   503→
+   504→   504→      {/* Summary */}
+   505→   505→      {profile?.summary && (
+   506→   506→        <div style={{ margin: '14px 0' }}>
+   507→   507→          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Georgia, serif', color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, paddingBottom: 3, borderBottom: `1.5px solid ${accentColor}40` }}>Executive Summary</div>
+   508→   508→          <p style={{ fontSize: 10, color: '#333', margin: 0, lineHeight: 1.65 }}>{profile.summary}</p>
+   509→   509→        </div>
+   510→   510→      )}
+   511→   511→
+   512→   512→      {/* Experience */}
+   513→   513→      {experiences.length > 0 && (
+   514→   514→        <div style={{ marginBottom: 14 }}>
+   515→   515→          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Georgia, serif', color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 3, borderBottom: `1.5px solid ${accentColor}40` }}>Professional Experience</div>
+   516→   516→          {experiences.map((exp) => (
+   517→   517→            <div key={exp.id} style={{ marginBottom: 12 }}>
+   518→   518→              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 1 }}>
+   519→   519→                <h3 style={{ fontSize: 11.5, fontWeight: 700, margin: 0, color: '#1a1a1a' }}>{exp.position}</h3>
+   520→   520→                <span style={{ fontSize: 9, color: '#777', fontWeight: 500 }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+   521→   521→              </div>
+   522→   522→              <div style={{ fontSize: 10.5, color: accentColor, fontWeight: 600, fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{exp.company}{exp.location ? `, ${exp.location}` : ''}</div>
+   523→   523→              {exp.description && (
+   524→   524→                <div style={{ fontSize: 9.5, color: '#444', marginTop: 4, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   525→   525→              )}
+   526→   526→            </div>
+   527→   527→          ))}
+   528→   528→        </div>
+   529→   529→      )}
+   530→   530→
+   531→   531→      {/* Education */}
+   532→   532→      {education.length > 0 && (
+   533→   533→        <div style={{ marginBottom: 14 }}>
+   534→   534→          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Georgia, serif', color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 3, borderBottom: `1.5px solid ${accentColor}40` }}>Education</div>
+   535→   535→          {education.map((edu) => (
+   536→   536→            <div key={edu.id} style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   537→   537→              <div>
+   538→   538→                <span style={{ fontSize: 11, fontWeight: 700 }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</span>
+   539→   539→                <span style={{ fontSize: 10, color: accentColor, fontFamily: 'Georgia, serif', fontStyle: 'italic', marginLeft: 8 }}>{edu.institution}{edu.location ? `, ${edu.location}` : ''}</span>
+   540→   540→              </div>
+   541→   541→              <span style={{ fontSize: 9, color: '#777' }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   542→   542→            </div>
+   543→   543→          ))}
+   544→   544→        </div>
+   545→   545→      )}
+   546→   546→
+   547→   547→      {/* Skills */}
+   548→   548→      {skills.length > 0 && (
+   549→   549→        <div>
+   550→   550→          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Georgia, serif', color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 3, borderBottom: `1.5px solid ${accentColor}40` }}>Core Competencies</div>
+   551→   551→          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 10px' }}>
+   552→   552→            {skills.map((skill) => (
+   553→   553→              <span key={skill.id} style={{ fontSize: 9.5, color: '#333', background: `${accentColor}10`, padding: '2px 10px', borderRadius: 2, border: `1px solid ${accentColor}20` }}>
+   554→   554→                {skill.name}
+   555→   555→              </span>
+   556→   556→            ))}
+   557→   557→          </div>
+   558→   558→        </div>
+   559→   559→      )}
+   560→   560→    </div>
+   561→   561→  );
+   562→   562→}
+   563→   563→
+   564→   564→// ════════════════════════════════════════════════════════════════
+   565→   565→// 6. COMPACT TEMPLATE — Dense layout, 9pt font, tight spacing
+   566→   566→// ════════════════════════════════════════════════════════════════
+   567→   567→function CompactTemplate({ profile, experiences, education, skills }: ResumeTemplateData) {
+   568→   568→  const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || 'Your Name';
+   569→   569→  const contactItems = [
+   570→   570→    profile?.email, profile?.phone, profile?.location, profile?.website, profile?.linkedin, profile?.github,
+   571→   571→  ].filter(Boolean);
+   572→   572→
+   573→   573→  const skillsByCategory = skills.reduce<Record<string, SkillData[]>>((acc, skill) => {
+   574→   574→    const cat = skill.category || 'other';
+   575→   575→    if (!acc[cat]) acc[cat] = [];
+   576→   576→    acc[cat].push(skill);
+   577→   577→    return acc;
+   578→   578→  }, {});
+   579→   579→
+   580→   580→  const categoryLabels: Record<string, string> = {
+   581→   581→    technical: 'Technical',
+   582→   582→    soft: 'Soft Skills',
+   583→   583→    language: 'Languages',
+   584→   584→    other: 'Other',
+   585→   585→  };
+   586→   586→
+   587→   587→  return (
+   588→   588→    <div style={{ fontFamily: "'Inter', sans-serif", color: '#1a1a1a', background: 'white', padding: '28px 36px', fontSize: 9, lineHeight: 1.4, minHeight: '297mm' }}>
+   589→   589→      {/* Header */}
+   590→   590→      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1.5px solid #1a1a1a', paddingBottom: 4, marginBottom: 8 }}>
+   591→   591→        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>{name}</h1>
+   592→   592→        {profile?.jobTitle && <span style={{ fontSize: 10, color: '#555', fontWeight: 500 }}>{profile.jobTitle}</span>}
+   593→   593→      </div>
+   594→   594→      <div style={{ fontSize: 8, color: '#777', marginBottom: 8 }}>
+   595→   595→        {contactItems.map((item, i) => (
+   596→   596→          <span key={i}>{item}{i < contactItems.length - 1 ? '  •  ' : ''}</span>
+   597→   597→        ))}
+   598→   598→      </div>
+   599→   599→
+   600→   600→      {/* Summary */}
+   601→   601→      {profile?.summary && (
+   602→   602→        <div style={{ marginBottom: 8 }}>
+   603→   603→          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Summary</div>
+   604→   604→          <p style={{ fontSize: 8.5, color: '#444', margin: 0, lineHeight: 1.45 }}>{profile.summary}</p>
+   605→   605→        </div>
+   606→   606→      )}
+   607→   607→
+   608→   608→      {/* Two column layout for Experience + Skills/Education */}
+   609→   609→      <div style={{ display: 'flex', gap: 20 }}>
+   610→   610→        {/* Left - Experience */}
+   611→   611→        <div style={{ flex: 2 }}>
+   612→   612→          {experiences.length > 0 && (
+   613→   613→            <div style={{ marginBottom: 8 }}>
+   614→   614→              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #ddd', paddingBottom: 2, marginBottom: 4 }}>Experience</div>
+   615→   615→              {experiences.map((exp) => (
+   616→   616→                <div key={exp.id} style={{ marginBottom: 6 }}>
+   617→   617→                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   618→   618→                    <span style={{ fontWeight: 600, fontSize: 9 }}>{exp.position}</span>
+   619→   619→                    <span style={{ fontSize: 7.5, color: '#999' }}>{dateRange(exp.startDate, exp.endDate, exp.current)}</span>
+   620→   620→                  </div>
+   621→   621→                  <div style={{ fontSize: 8.5, color: '#555' }}>{exp.company}{exp.location ? `, ${exp.location}` : ''}</div>
+   622→   622→                  {exp.description && (
+   623→   623→                    <div style={{ fontSize: 8, color: '#444', marginTop: 1, whiteSpace: 'pre-line' }}>{exp.description}</div>
+   624→   624→                  )}
+   625→   625→                </div>
+   626→   626→              ))}
+   627→   627→            </div>
+   628→   628→          )}
+   629→   629→
+   630→   630→          {education.length > 0 && (
+   631→   631→            <div>
+   632→   632→              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #ddd', paddingBottom: 2, marginBottom: 4 }}>Education</div>
+   633→   633→              {education.map((edu) => (
+   634→   634→                <div key={edu.id} style={{ marginBottom: 4 }}>
+   635→   635→                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+   636→   636→                    <span style={{ fontWeight: 600, fontSize: 9 }}>{edu.degree}{edu.field ? ` in ${edu.field}` : ''}</span>
+   637→   637→                    <span style={{ fontSize: 7.5, color: '#999' }}>{dateRange(edu.startDate, edu.endDate)}</span>
+   638→   638→                  </div>
+   639→   639→                  <div style={{ fontSize: 8.5, color: '#555' }}>{edu.institution}{edu.location ? `, ${edu.location}` : ''}</div>
+   640→   640→                </div>
+   641→   641→              ))}
+   642→   642→            </div>
+   643→   643→          )}
+   644→   644→        </div>
+   645→   645→
+   646→   646→        {/* Right - Skills */}
+   647→   647→        <div style={{ flex: 1 }}>
+   648→   648→          {skills.length > 0 && (
+   649→   649→            <div>
+   650→   650→              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #ddd', paddingBottom: 2, marginBottom: 4 }}>Skills</div>
+   651→   651→              {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+   652→   652→                <div key={category} style={{ marginBottom: 6 }}>
+   653→   653→                  <div style={{ fontSize: 8, fontWeight: 600, color: '#666', marginBottom: 2 }}>{categoryLabels[category] || category}</div>
+   654→   654→                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 4px' }}>
+   655→   655→                    {catSkills.map(skill => (
+   656→   656→                      <span key={skill.id} style={{ fontSize: 8, background: '#f3f4f6', padding: '1px 5px', borderRadius: 2 }}>
+   657→   657→                        {skill.name}
+   658→   658→                      </span>
+   659→   659→                    ))}
+   660→   660→                  </div>
+   661→   661→                </div>
+   662→   662→              ))}
+   663→   663→            </div>
+   664→   664→          )}
+   665→   665→        </div>
+   666→   666→      </div>
+   667→   667→    </div>
+   668→   668→  );
+   669→   669→}
+   670→   670→
+   671→   671→// ════════════════════════════════════════════════════════════════
+   672→   672→// Main renderResume function
+   673→   673→// ════════════════════════════════════════════════════════════════
+   674→   674→export function renderResume(templateId: string, data: ResumeTemplateData): React.ReactNode {
+   675→   675→  switch (templateId) {
+   676→   676→    case 'modern':
+   677→   677→      return <ModernTemplate {...data} />;
+   678→   678→    case 'professional':
+   679→   679→      return <ProfessionalTemplate {...data} />;
+   680→   680→    case 'creative':
+   681→   681→      return <CreativeTemplate {...data} />;
+   682→   682→    case 'executive':
+   683→   683→      return <ExecutiveTemplate {...data} />;
+   684→   684→    case 'compact':
+   685→   685→      return <CompactTemplate {...data} />;
+   686→   686→    case 'minimal':
+   687→   687→    default:
+   688→   688→      return <MinimalTemplate {...data} />;
+   689→   689→  }
+   690→   690→}
+   691→   691→
+   692→   692→// ── Template metadata for dropdowns etc. ───────────────────────
+   693→   693→export const TEMPLATE_LIST = [
+   694→   694→  { id: 'minimal', name: 'Minimal', description: 'Clean and simple single-column layout' },
+   695→   695→  { id: 'modern', name: 'Modern', description: 'Two-column with dark sidebar' },
+   696→   696→  { id: 'professional', name: 'Professional', description: 'Traditional centered format' },
+   697→   697→  { id: 'creative', name: 'Creative', description: 'Colored sidebar with skill bars' },
+   698→   698→  { id: 'executive', name: 'Executive', description: 'Bold header with serif accents' },
+   699→   699→  { id: 'compact', name: 'Compact', description: 'Dense layout for maximum content' },
+   700→   700→] as const;
+   701→   701→

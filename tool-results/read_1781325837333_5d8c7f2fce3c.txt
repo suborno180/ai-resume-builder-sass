@@ -1,0 +1,1136 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback, useRef } from 'react';
+     4→import { useAppStore } from '@/lib/store';
+     5→import { useSession } from 'next-auth/react';
+     6→import { toast } from 'sonner';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Button } from '@/components/ui/button';
+    10→import { Textarea } from '@/components/ui/textarea';
+    11→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    14→import { Checkbox } from '@/components/ui/checkbox';
+    15→import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+    16→import { ScrollArea } from '@/components/ui/scroll-area';
+    17→import { Separator } from '@/components/ui/separator';
+    18→import { motion } from 'framer-motion';
+    19→import { ArrowLeft, Sparkles, Eye, Plus, Trash2, ChevronDown, Loader2 } from 'lucide-react';
+    20→import { renderResume } from '@/components/resume-templates';
+    21→import type { ResumeRenderData, ExperienceData, EducationData, SkillData } from '@/lib/types';
+    22→
+    23→// ── Template display names ───────────────────────────────────────
+    24→const templateNames: Record<string, string> = {
+    25→  minimal: 'Minimal',
+    26→  modern: 'Modern',
+    27→  professional: 'Professional',
+    28→  creative: 'Creative',
+    29→  executive: 'Executive',
+    30→  compact: 'Compact',
+    31→};
+    32→
+    33→// ── Category labels ──────────────────────────────────────────────
+    34→const categoryLabels: Record<string, string> = {
+    35→  technical: 'Technical',
+    36→  soft: 'Soft Skills',
+    37→  language: 'Languages',
+    38→  other: 'Other',
+    39→};
+    40→
+    41→// ── Animation variants ───────────────────────────────────────────
+    42→const fadeIn = {
+    43→  hidden: { opacity: 0, y: 10 },
+    44→  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+    45→};
+    46→
+    47→// ── Component ────────────────────────────────────────────────────
+    48→export default function ResumeEditor() {
+    49→  const { data: session } = useSession();
+    50→  const {
+    51→    profile,
+    52→    setProfile,
+    53→    experiences,
+    54→    setExperiences,
+    55→    addExperience,
+    56→    updateExperience,
+    57→    removeExperience,
+    58→    education,
+    59→    setEducation,
+    60→    addEducation,
+    61→    updateEducation,
+    62→    removeEducation,
+    63→    skills,
+    64→    setSkills,
+    65→    addSkill,
+    66→    removeSkill,
+    67→    currentResume,
+    68→    setCurrentResume,
+    69→    setView,
+    70→    selectedTemplate,
+    71→    setSelectedTemplate,
+    72→    aiLoading,
+    73→    setAiLoading,
+    74→  } = useAppStore();
+    75→
+    76→  // ── Local state ──────────────────────────────────────────────
+    77→  const [personalOpen, setPersonalOpen] = useState(true);
+    78→  const [summaryOpen, setSummaryOpen] = useState(true);
+    79→  const [expOpen, setExpOpen] = useState(true);
+    80→  const [eduOpen, setEduOpen] = useState(true);
+    81→  const [skillsOpen, setSkillsOpen] = useState(true);
+    82→  const [saving, setSaving] = useState(false);
+    83→  const [newSkillName, setNewSkillName] = useState('');
+    84→  const [newSkillCategory, setNewSkillCategory] = useState<'technical' | 'soft' | 'language' | 'other'>('technical');
+    85→  const [showPreview, setShowPreview] = useState(false);
+    86→  const [loadingData, setLoadingData] = useState(true);
+    87→
+    88→  // ── Debounce refs ─────────────────────────────────────────────
+    89→  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    90→  const profileRef = useRef(profile);
+    91→  const experiencesRef = useRef(experiences);
+    92→  const educationRef = useRef(education);
+    93→  const skillsRef = useRef(skills);
+    94→
+    95→  // Keep refs in sync
+    96→  useEffect(() => { profileRef.current = profile; }, [profile]);
+    97→  useEffect(() => { experiencesRef.current = experiences; }, [experiences]);
+    98→  useEffect(() => { educationRef.current = education; }, [education]);
+    99→  useEffect(() => { skillsRef.current = skills; }, [skills]);
+   100→
+   101→  // ── Template from resume or store ─────────────────────────────
+   102→  const activeTemplate = currentResume?.templateId || selectedTemplate;
+   103→
+   104→  // ── Fetch data on mount ───────────────────────────────────────
+   105→  const fetchProfile = useCallback(async () => {
+   106→    try {
+   107→      const res = await fetch('/api/profile');
+   108→      if (res.ok) {
+   109→        const data = await res.json();
+   110→        const p = data.profile;
+   111→        setProfile({
+   112→          id: p.id,
+   113→          firstName: p.firstName ?? '',
+   114→          lastName: p.lastName ?? '',
+   115→          jobTitle: p.jobTitle ?? '',
+   116→          email: p.email ?? '',
+   117→          phone: p.phone ?? '',
+   118→          location: p.location ?? '',
+   119→          website: p.website ?? '',
+   120→          linkedin: p.linkedin ?? '',
+   121→          github: p.github ?? '',
+   122→          summary: p.summary ?? '',
+   123→        });
+   124→        setExperiences(p.experiences || []);
+   125→        setEducation(p.education || []);
+   126→        setSkills(p.skills || []);
+   127→      }
+   128→    } catch {
+   129→      // silently ignore
+   130→    }
+   131→  }, [setProfile, setExperiences, setEducation, setSkills]);
+   132→
+   133→  useEffect(() => {
+   134→    const load = async () => {
+   135→      setLoadingData(true);
+   136→      await fetchProfile();
+   137→      setLoadingData(false);
+   138→    };
+   139→    load();
+   140→  }, [fetchProfile]);
+   141→
+   142→  // ── Auto-save (debounced) ─────────────────────────────────────
+   143→  const triggerAutoSave = useCallback(() => {
+   144→    if (!currentResume?.id) return;
+   145→
+   146→    if (autoSaveTimer.current) {
+   147→      clearTimeout(autoSaveTimer.current);
+   148→    }
+   149→
+   150→    autoSaveTimer.current = setTimeout(async () => {
+   151→      setSaving(true);
+   152→      try {
+   153→        const resumeContent = JSON.stringify({
+   154→          profile: profileRef.current,
+   155→          experiences: experiencesRef.current,
+   156→          education: educationRef.current,
+   157→          skills: skillsRef.current,
+   158→        });
+   159→
+   160→        const res = await fetch('/api/resume', {
+   161→          method: 'PUT',
+   162→          headers: { 'Content-Type': 'application/json' },
+   163→          body: JSON.stringify({
+   164→            id: currentResume.id,
+   165→            content: resumeContent,
+   166→          }),
+   167→        });
+   168→
+   169→        if (res.ok) {
+   170→          const data = await res.json();
+   171→          setCurrentResume({ ...currentResume, ...data.resume });
+   172→        }
+   173→      } catch {
+   174→        // silently fail auto-save
+   175→      } finally {
+   176→        setSaving(false);
+   177→      }
+   178→    }, 1500);
+   179→  }, [currentResume, setCurrentResume]);
+   180→
+   181→  // Trigger auto-save whenever data changes
+   182→  useEffect(() => {
+   183→    if (!loadingData) {
+   184→      triggerAutoSave();
+   185→    }
+   186→  }, [profile, experiences, education, skills, loadingData, triggerAutoSave]);
+   187→
+   188→  // ── AI Enhancement ────────────────────────────────────────────
+   189→  const enhanceWithAI = async (type: string, context: Record<string, unknown>) => {
+   190→    setAiLoading(true);
+   191→    try {
+   192→      const res = await fetch('/api/ai/generate', {
+   193→        method: 'POST',
+   194→        headers: { 'Content-Type': 'application/json' },
+   195→        body: JSON.stringify({ type, context }),
+   196→      });
+   197→      const data = await res.json();
+   198→      return data.content;
+   199→    } catch {
+   200→      toast.error('AI generation failed');
+   201→      return null;
+   202→    } finally {
+   203→      setAiLoading(false);
+   204→    }
+   205→  };
+   206→
+   207→  // ── Profile field update ──────────────────────────────────────
+   208→  const updateProfileField = (field: string, value: string) => {
+   209→    if (profile) {
+   210→      setProfile({ ...profile, [field]: value });
+   211→    }
+   212→  };
+   213→
+   214→  // ── Save profile to API ───────────────────────────────────────
+   215→  const saveProfile = async () => {
+   216→    if (!profile) return;
+   217→    try {
+   218→      await fetch('/api/profile', {
+   219→        method: 'PUT',
+   220→        headers: { 'Content-Type': 'application/json' },
+   221→        body: JSON.stringify(profile),
+   222→      });
+   223→    } catch {
+   224→      // silently fail
+   225→    }
+   226→  };
+   227→
+   228→  // ── Experience handlers ───────────────────────────────────────
+   229→  const handleAddExperience = async () => {
+   230→    try {
+   231→      const res = await fetch('/api/profile/experience', {
+   232→        method: 'POST',
+   233→        headers: { 'Content-Type': 'application/json' },
+   234→        body: JSON.stringify({
+   235→          company: 'New Company',
+   236→          position: 'New Position',
+   237→          startDate: new Date().toISOString().slice(0, 7),
+   238→          current: false,
+   239→          order: experiences.length,
+   240→        }),
+   241→      });
+   242→      if (res.ok) {
+   243→        const data = await res.json();
+   244→        addExperience(data.experience);
+   245→        toast.success('Experience added');
+   246→      }
+   247→    } catch {
+   248→      toast.error('Failed to add experience');
+   249→    }
+   250→  };
+   251→
+   252→  const handleUpdateExperience = async (id: string, updates: Partial<ExperienceData>) => {
+   253→    updateExperience(id, updates);
+   254→    try {
+   255→      await fetch('/api/profile/experience', {
+   256→        method: 'PUT',
+   257→        headers: { 'Content-Type': 'application/json' },
+   258→        body: JSON.stringify({ id, ...updates }),
+   259→      });
+   260→    } catch {
+   261→      // silently fail
+   262→    }
+   263→  };
+   264→
+   265→  const handleDeleteExperience = async (id: string) => {
+   266→    try {
+   267→      const res = await fetch('/api/profile/experience', {
+   268→        method: 'DELETE',
+   269→        headers: { 'Content-Type': 'application/json' },
+   270→        body: JSON.stringify({ id }),
+   271→      });
+   272→      if (res.ok) {
+   273→        removeExperience(id);
+   274→        toast.success('Experience removed');
+   275→      }
+   276→    } catch {
+   277→      toast.error('Failed to delete experience');
+   278→    }
+   279→  };
+   280→
+   281→  // ── Education handlers ────────────────────────────────────────
+   282→  const handleAddEducation = async () => {
+   283→    try {
+   284→      const res = await fetch('/api/profile/education', {
+   285→        method: 'POST',
+   286→        headers: { 'Content-Type': 'application/json' },
+   287→        body: JSON.stringify({
+   288→          institution: 'New Institution',
+   289→          degree: 'Degree',
+   290→          startDate: new Date().toISOString().slice(0, 7),
+   291→          order: education.length,
+   292→        }),
+   293→      });
+   294→      if (res.ok) {
+   295→        const data = await res.json();
+   296→        addEducation(data.education);
+   297→        toast.success('Education added');
+   298→      }
+   299→    } catch {
+   300→      toast.error('Failed to add education');
+   301→    }
+   302→  };
+   303→
+   304→  const handleUpdateEducation = async (id: string, updates: Partial<EducationData>) => {
+   305→    updateEducation(id, updates);
+   306→    try {
+   307→      await fetch('/api/profile/education', {
+   308→        method: 'PUT',
+   309→        headers: { 'Content-Type': 'application/json' },
+   310→        body: JSON.stringify({ id, ...updates }),
+   311→      });
+   312→    } catch {
+   313→      // silently fail
+   314→    }
+   315→  };
+   316→
+   317→  const handleDeleteEducation = async (id: string) => {
+   318→    try {
+   319→      const res = await fetch('/api/profile/education', {
+   320→        method: 'DELETE',
+   321→        headers: { 'Content-Type': 'application/json' },
+   322→        body: JSON.stringify({ id }),
+   323→      });
+   324→      if (res.ok) {
+   325→        removeEducation(id);
+   326→        toast.success('Education removed');
+   327→      }
+   328→    } catch {
+   329→      toast.error('Failed to delete education');
+   330→    }
+   331→  };
+   332→
+   333→  // ── Skill handlers ────────────────────────────────────────────
+   334→  const handleAddSkill = async () => {
+   335→    if (!newSkillName.trim()) return;
+   336→    try {
+   337→      const res = await fetch('/api/profile/skill', {
+   338→        method: 'POST',
+   339→        headers: { 'Content-Type': 'application/json' },
+   340→        body: JSON.stringify({
+   341→          name: newSkillName.trim(),
+   342→          category: newSkillCategory,
+   343→          order: skills.length,
+   344→        }),
+   345→      });
+   346→      if (res.ok) {
+   347→        const data = await res.json();
+   348→        addSkill(data.skill);
+   349→        setNewSkillName('');
+   350→        toast.success('Skill added');
+   351→      }
+   352→    } catch {
+   353→      toast.error('Failed to add skill');
+   354→    }
+   355→  };
+   356→
+   357→  const handleDeleteSkill = async (id: string) => {
+   358→    try {
+   359→      const res = await fetch('/api/profile/skill', {
+   360→        method: 'DELETE',
+   361→        headers: { 'Content-Type': 'application/json' },
+   362→        body: JSON.stringify({ id }),
+   363→      });
+   364→      if (res.ok) {
+   365→        removeSkill(id);
+   366→        toast.success('Skill removed');
+   367→      }
+   368→    } catch {
+   369→      toast.error('Failed to delete skill');
+   370→    }
+   371→  };
+   372→
+   373→  // ── AI: Enhance Summary ───────────────────────────────────────
+   374→  const handleAIEnhanceSummary = async () => {
+   375→    if (!profile) return;
+   376→    const result = await enhanceWithAI('summary', {
+   377→      firstName: profile.firstName,
+   378→      lastName: profile.lastName,
+   379→      jobTitle: profile.jobTitle,
+   380→      experiences: experiences.map(e => ({ position: e.position, company: e.company, description: e.description })),
+   381→      skills: skills.map(s => ({ name: s.name, category: s.category })),
+   382→      summary: profile.summary,
+   383→    });
+   384→    if (result) {
+   385→      setProfile({ ...profile, summary: result });
+   386→      await saveProfile();
+   387→      toast.success('Summary enhanced with AI');
+   388→    }
+   389→  };
+   390→
+   391→  // ── AI: Generate Experience Description ────────────────────────
+   392→  const handleAIExperience = async (exp: ExperienceData) => {
+   393→    const result = await enhanceWithAI('experience', {
+   394→      position: exp.position,
+   395→      company: exp.company,
+   396→      description: exp.description,
+   397→    });
+   398→    if (result && exp.id) {
+   399→      updateExperience(exp.id, { description: result });
+   400→      try {
+   401→        await fetch('/api/profile/experience', {
+   402→          method: 'PUT',
+   403→          headers: { 'Content-Type': 'application/json' },
+   404→          body: JSON.stringify({ id: exp.id, description: result }),
+   405→        });
+   406→      } catch {
+   407→        // silently fail
+   408→      }
+   409→      toast.success('Description generated with AI');
+   410→    }
+   411→  };
+   412→
+   413→  // ── AI: Suggest Skills ────────────────────────────────────────
+   414→  const handleAISuggestSkills = async () => {
+   415→    const result = await enhanceWithAI('skills', {
+   416→      jobTitle: profile?.jobTitle,
+   417→      currentSkills: skills.map(s => s.name),
+   418→    });
+   419→    if (Array.isArray(result)) {
+   420→      let addedCount = 0;
+   421→      for (const skill of result) {
+   422→        const name = typeof skill === 'object' && skill.name ? skill.name : String(skill);
+   423→        const category = typeof skill === 'object' && skill.category
+   424→          ? (['technical', 'soft', 'language', 'other'].includes(skill.category) ? skill.category : 'other')
+   425→          : 'technical';
+   426→
+   427→        // Avoid duplicates
+   428→        if (skills.some(s => s.name.toLowerCase() === name.toLowerCase())) continue;
+   429→        if (skillsRef.current.some(s => s.name.toLowerCase() === name.toLowerCase())) continue;
+   430→
+   431→        try {
+   432→          const res = await fetch('/api/profile/skill', {
+   433→            method: 'POST',
+   434→            headers: { 'Content-Type': 'application/json' },
+   435→            body: JSON.stringify({ name, category, order: skillsRef.current.length + addedCount }),
+   436→          });
+   437→          if (res.ok) {
+   438→            const data = await res.json();
+   439→            addSkill(data.skill);
+   440→            addedCount++;
+   441→          }
+   442→        } catch {
+   443→          // continue
+   444→        }
+   445→      }
+   446→      if (addedCount > 0) {
+   447→        toast.success(`${addedCount} skill${addedCount > 1 ? 's' : ''} added`);
+   448→      } else {
+   449→        toast.info('No new skills to add');
+   450→      }
+   451→    }
+   452→  };
+   453→
+   454→  // ── Template change ───────────────────────────────────────────
+   455→  const handleTemplateChange = async (templateId: string) => {
+   456→    setSelectedTemplate(templateId);
+   457→    if (currentResume?.id) {
+   458→      try {
+   459→        await fetch('/api/resume', {
+   460→          method: 'PUT',
+   461→          headers: { 'Content-Type': 'application/json' },
+   462→          body: JSON.stringify({ id: currentResume.id, templateId }),
+   463→        });
+   464→        setCurrentResume({ ...currentResume, templateId });
+   465→      } catch {
+   466→        // silently fail
+   467→      }
+   468→    }
+   469→  };
+   470→
+   471→  // ── Resume render data ────────────────────────────────────────
+   472→  const resumeData: ResumeRenderData = {
+   473→    profile: profile || {},
+   474→    experiences,
+   475→    education,
+   476→    skills,
+   477→  };
+   478→
+   479→  // ── Loading state ─────────────────────────────────────────────
+   480→  if (loadingData) {
+   481→    return (
+   482→      <div className="flex min-h-screen items-center justify-center bg-background">
+   483→        <div className="flex flex-col items-center gap-4">
+   484→          <Loader2 className="size-8 animate-spin text-primary" />
+   485→          <p className="text-sm text-muted-foreground">Loading editor…</p>
+   486→        </div>
+   487→      </div>
+   488→    );
+   489→  }
+   490→
+   491→  return (
+   492→    <div className="min-h-screen bg-background flex flex-col">
+   493→      {/* ── Header ─────────────────────────────────────────────── */}
+   494→      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+   495→        <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+   496→          <div className="flex items-center gap-3">
+   497→            <Button
+   498→              variant="ghost"
+   499→              size="sm"
+   500→              className="gap-1.5 text-muted-foreground hover:text-foreground"
+   501→              onClick={() => setView('dashboard')}
+   502→            >
+   503→              <ArrowLeft className="size-4" />
+   504→              <span className="hidden sm:inline">Back</span>
+   505→            </Button>
+   506→            <Separator orientation="vertical" className="h-6" />
+   507→            <h1 className="text-base font-semibold tracking-tight">Edit Resume</h1>
+   508→            <Badge variant="secondary" className="text-xs">
+   509→              {templateNames[activeTemplate] || activeTemplate}
+   510→            </Badge>
+   511→            {saving && (
+   512→              <span className="text-xs text-muted-foreground flex items-center gap-1">
+   513→                <Loader2 className="size-3 animate-spin" />
+   514→                Saving…
+   515→              </span>
+   516→            )}
+   517→          </div>
+   518→
+   519→          <div className="flex items-center gap-2">
+   520→            <Select value={activeTemplate} onValueChange={handleTemplateChange}>
+   521→              <SelectTrigger className="w-[140px] h-8 text-xs">
+   522→                <SelectValue />
+   523→              </SelectTrigger>
+   524→              <SelectContent>
+   525→                {Object.entries(templateNames).map(([id, name]) => (
+   526→                  <SelectItem key={id} value={id}>{name}</SelectItem>
+   527→                ))}
+   528→              </SelectContent>
+   529→            </Select>
+   530→            <Button
+   531→              variant="outline"
+   532→              size="sm"
+   533→              className="gap-1.5"
+   534→              onClick={() => {
+   535→                setAiLoading(true);
+   536→                toast.info('AI Assistant is available in the editor panels');
+   537→                setAiLoading(false);
+   538→              }}
+   539→            >
+   540→              <Sparkles className="size-3.5" />
+   541→              <span className="hidden sm:inline">AI Assist</span>
+   542→            </Button>
+   543→            <Button
+   544→              variant="outline"
+   545→              size="sm"
+   546→              className="gap-1.5 lg:hidden"
+   547→              onClick={() => setShowPreview(!showPreview)}
+   548→            >
+   549→              <Eye className="size-3.5" />
+   550→              Preview
+   551→            </Button>
+   552→          </div>
+   553→        </div>
+   554→      </header>
+   555→
+   556→      {/* ── Main Content ───────────────────────────────────────── */}
+   557→      <div className="flex-1 flex flex-col lg:flex-row">
+   558→        {/* ── Left Panel: Editor ────────────────────────────────── */}
+   559→        <div className={`flex-1 lg:w-1/2 lg:max-w-[600px] border-r border-border/50 ${showPreview ? 'hidden lg:block' : ''}`}>
+   560→          <ScrollArea className="h-[calc(100vh-56px)]">
+   561→            <div className="p-4 sm:p-6 space-y-4">
+   562→
+   563→              {/* ── Personal Info ────────────────────────────────── */}
+   564→              <motion.div variants={fadeIn} initial="hidden" animate="visible">
+   565→                <Collapsible open={personalOpen} onOpenChange={setPersonalOpen}>
+   566→                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 hover:text-primary transition-colors">
+   567→                    <h2 className="text-sm font-semibold tracking-tight">Personal Info</h2>
+   568→                    <ChevronDown className={`size-4 text-muted-foreground transition-transform ${personalOpen ? 'rotate-180' : ''}`} />
+   569→                  </CollapsibleTrigger>
+   570→                  <CollapsibleContent>
+   571→                    <Card className="border-border/50 bg-card/50">
+   572→                      <CardContent className="p-4 space-y-3">
+   573→                        <div className="grid grid-cols-2 gap-3">
+   574→                          <div className="space-y-1.5">
+   575→                            <Label className="text-xs">First Name</Label>
+   576→                            <Input
+   577→                              value={profile?.firstName || ''}
+   578→                              onChange={(e) => updateProfileField('firstName', e.target.value)}
+   579→                              onBlur={saveProfile}
+   580→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   581→                              placeholder="John"
+   582→                            />
+   583→                          </div>
+   584→                          <div className="space-y-1.5">
+   585→                            <Label className="text-xs">Last Name</Label>
+   586→                            <Input
+   587→                              value={profile?.lastName || ''}
+   588→                              onChange={(e) => updateProfileField('lastName', e.target.value)}
+   589→                              onBlur={saveProfile}
+   590→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   591→                              placeholder="Doe"
+   592→                            />
+   593→                          </div>
+   594→                        </div>
+   595→                        <div className="space-y-1.5">
+   596→                          <Label className="text-xs">Job Title</Label>
+   597→                          <Input
+   598→                            value={profile?.jobTitle || ''}
+   599→                            onChange={(e) => updateProfileField('jobTitle', e.target.value)}
+   600→                            onBlur={saveProfile}
+   601→                            className="h-8 text-sm bg-secondary/50 border-border/50"
+   602→                            placeholder="Software Engineer"
+   603→                          />
+   604→                        </div>
+   605→                        <div className="grid grid-cols-2 gap-3">
+   606→                          <div className="space-y-1.5">
+   607→                            <Label className="text-xs">Email</Label>
+   608→                            <Input
+   609→                              type="email"
+   610→                              value={profile?.email || ''}
+   611→                              onChange={(e) => updateProfileField('email', e.target.value)}
+   612→                              onBlur={saveProfile}
+   613→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   614→                              placeholder="john@example.com"
+   615→                            />
+   616→                          </div>
+   617→                          <div className="space-y-1.5">
+   618→                            <Label className="text-xs">Phone</Label>
+   619→                            <Input
+   620→                              value={profile?.phone || ''}
+   621→                              onChange={(e) => updateProfileField('phone', e.target.value)}
+   622→                              onBlur={saveProfile}
+   623→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   624→                              placeholder="+1 (555) 000-0000"
+   625→                            />
+   626→                          </div>
+   627→                        </div>
+   628→                        <div className="space-y-1.5">
+   629→                          <Label className="text-xs">Location</Label>
+   630→                          <Input
+   631→                            value={profile?.location || ''}
+   632→                            onChange={(e) => updateProfileField('location', e.target.value)}
+   633→                            onBlur={saveProfile}
+   634→                            className="h-8 text-sm bg-secondary/50 border-border/50"
+   635→                            placeholder="San Francisco, CA"
+   636→                          />
+   637→                        </div>
+   638→                        <div className="grid grid-cols-3 gap-3">
+   639→                          <div className="space-y-1.5">
+   640→                            <Label className="text-xs">Website</Label>
+   641→                            <Input
+   642→                              value={profile?.website || ''}
+   643→                              onChange={(e) => updateProfileField('website', e.target.value)}
+   644→                              onBlur={saveProfile}
+   645→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   646→                              placeholder="yoursite.com"
+   647→                            />
+   648→                          </div>
+   649→                          <div className="space-y-1.5">
+   650→                            <Label className="text-xs">LinkedIn</Label>
+   651→                            <Input
+   652→                              value={profile?.linkedin || ''}
+   653→                              onChange={(e) => updateProfileField('linkedin', e.target.value)}
+   654→                              onBlur={saveProfile}
+   655→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   656→                              placeholder="username"
+   657→                            />
+   658→                          </div>
+   659→                          <div className="space-y-1.5">
+   660→                            <Label className="text-xs">GitHub</Label>
+   661→                            <Input
+   662→                              value={profile?.github || ''}
+   663→                              onChange={(e) => updateProfileField('github', e.target.value)}
+   664→                              onBlur={saveProfile}
+   665→                              className="h-8 text-sm bg-secondary/50 border-border/50"
+   666→                              placeholder="username"
+   667→                            />
+   668→                          </div>
+   669→                        </div>
+   670→                      </CardContent>
+   671→                    </Card>
+   672→                  </CollapsibleContent>
+   673→                </Collapsible>
+   674→              </motion.div>
+   675→
+   676→              <Separator className="opacity-50" />
+   677→
+   678→              {/* ── Summary ─────────────────────────────────────── */}
+   679→              <motion.div variants={fadeIn} initial="hidden" animate="visible">
+   680→                <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
+   681→                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 hover:text-primary transition-colors">
+   682→                    <h2 className="text-sm font-semibold tracking-tight">Summary</h2>
+   683→                    <ChevronDown className={`size-4 text-muted-foreground transition-transform ${summaryOpen ? 'rotate-180' : ''}`} />
+   684→                  </CollapsibleTrigger>
+   685→                  <CollapsibleContent>
+   686→                    <Card className="border-border/50 bg-card/50">
+   687→                      <CardContent className="p-4 space-y-3">
+   688→                        <Textarea
+   689→                          value={profile?.summary || ''}
+   690→                          onChange={(e) => updateProfileField('summary', e.target.value)}
+   691→                          onBlur={saveProfile}
+   692→                          className="min-h-[120px] text-sm bg-secondary/50 border-border/50 resize-none"
+   693→                          placeholder="Write a professional summary about yourself…"
+   694→                        />
+   695→                        <Button
+   696→                          variant="outline"
+   697→                          size="sm"
+   698→                          className="gap-1.5 w-full"
+   699→                          onClick={handleAIEnhanceSummary}
+   700→                          disabled={aiLoading}
+   701→                        >
+   702→                          {aiLoading ? (
+   703→                            <Loader2 className="size-3.5 animate-spin" />
+   704→                          ) : (
+   705→                            <Sparkles className="size-3.5" />
+   706→                          )}
+   707→                          AI Enhance
+   708→                        </Button>
+   709→                      </CardContent>
+   710→                    </Card>
+   711→                  </CollapsibleContent>
+   712→                </Collapsible>
+   713→              </motion.div>
+   714→
+   715→              <Separator className="opacity-50" />
+   716→
+   717→              {/* ── Experience ──────────────────────────────────── */}
+   718→              <motion.div variants={fadeIn} initial="hidden" animate="visible">
+   719→                <Collapsible open={expOpen} onOpenChange={setExpOpen}>
+   720→                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 hover:text-primary transition-colors">
+   721→                    <h2 className="text-sm font-semibold tracking-tight">Experience ({experiences.length})</h2>
+   722→                    <ChevronDown className={`size-4 text-muted-foreground transition-transform ${expOpen ? 'rotate-180' : ''}`} />
+   723→                  </CollapsibleTrigger>
+   724→                  <CollapsibleContent>
+   725→                    <div className="space-y-3">
+   726→                      {experiences.length === 0 && (
+   727→                        <Card className="border-dashed border-border/60">
+   728→                          <CardContent className="py-6 text-center">
+   729→                            <p className="text-sm text-muted-foreground">No experience added yet</p>
+   730→                          </CardContent>
+   731→                        </Card>
+   732→                      )}
+   733→                      {experiences.map((exp) => (
+   734→                        <Card key={exp.id} className="border-border/50 bg-card/50">
+   735→                          <CardHeader className="pb-2 pt-4 px-4">
+   736→                            <div className="flex items-start justify-between">
+   737→                              <CardTitle className="text-sm font-medium">{exp.position} at {exp.company}</CardTitle>
+   738→                              <Button
+   739→                                variant="ghost"
+   740→                                size="icon"
+   741→                                className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+   742→                                onClick={() => exp.id && handleDeleteExperience(exp.id)}
+   743→                              >
+   744→                                <Trash2 className="size-3.5" />
+   745→                              </Button>
+   746→                            </div>
+   747→                          </CardHeader>
+   748→                          <CardContent className="px-4 pb-4 space-y-3">
+   749→                            <div className="grid grid-cols-2 gap-3">
+   750→                              <div className="space-y-1.5">
+   751→                                <Label className="text-xs">Company</Label>
+   752→                                <Input
+   753→                                  value={exp.company}
+   754→                                  onChange={(e) => exp.id && handleUpdateExperience(exp.id, { company: e.target.value })}
+   755→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   756→                                />
+   757→                              </div>
+   758→                              <div className="space-y-1.5">
+   759→                                <Label className="text-xs">Position</Label>
+   760→                                <Input
+   761→                                  value={exp.position}
+   762→                                  onChange={(e) => exp.id && handleUpdateExperience(exp.id, { position: e.target.value })}
+   763→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   764→                                />
+   765→                              </div>
+   766→                            </div>
+   767→                            <div className="space-y-1.5">
+   768→                              <Label className="text-xs">Location</Label>
+   769→                              <Input
+   770→                                value={exp.location || ''}
+   771→                                onChange={(e) => exp.id && handleUpdateExperience(exp.id, { location: e.target.value })}
+   772→                                className="h-8 text-sm bg-secondary/50 border-border/50"
+   773→                                placeholder="City, State"
+   774→                              />
+   775→                            </div>
+   776→                            <div className="grid grid-cols-2 gap-3">
+   777→                              <div className="space-y-1.5">
+   778→                                <Label className="text-xs">Start Date</Label>
+   779→                                <Input
+   780→                                  type="month"
+   781→                                  value={exp.startDate}
+   782→                                  onChange={(e) => exp.id && handleUpdateExperience(exp.id, { startDate: e.target.value })}
+   783→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   784→                                />
+   785→                              </div>
+   786→                              <div className="space-y-1.5">
+   787→                                <Label className="text-xs">End Date</Label>
+   788→                                <Input
+   789→                                  type="month"
+   790→                                  value={exp.endDate || ''}
+   791→                                  onChange={(e) => exp.id && handleUpdateExperience(exp.id, { endDate: e.target.value })}
+   792→                                  disabled={exp.current}
+   793→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   794→                                />
+   795→                              </div>
+   796→                            </div>
+   797→                            <div className="flex items-center gap-2">
+   798→                              <Checkbox
+   799→                                id={`exp-current-${exp.id}`}
+   800→                                checked={exp.current}
+   801→                                onCheckedChange={(checked) =>
+   802→                                  exp.id && handleUpdateExperience(exp.id, { current: !!checked, endDate: checked ? '' : exp.endDate })
+   803→                                }
+   804→                              />
+   805→                              <Label htmlFor={`exp-current-${exp.id}`} className="text-xs cursor-pointer">
+   806→                                Currently working here
+   807→                              </Label>
+   808→                            </div>
+   809→                            <div className="space-y-1.5">
+   810→                              <Label className="text-xs">Description</Label>
+   811→                              <Textarea
+   812→                                value={exp.description || ''}
+   813→                                onChange={(e) => exp.id && handleUpdateExperience(exp.id, { description: e.target.value })}
+   814→                                className="min-h-[80px] text-sm bg-secondary/50 border-border/50 resize-none"
+   815→                                placeholder="Describe your responsibilities and achievements…"
+   816→                              />
+   817→                              <Button
+   818→                                variant="outline"
+   819→                                size="sm"
+   820→                                className="gap-1.5 w-full"
+   821→                                onClick={() => handleAIExperience(exp)}
+   822→                                disabled={aiLoading}
+   823→                              >
+   824→                                {aiLoading ? (
+   825→                                  <Loader2 className="size-3.5 animate-spin" />
+   826→                                ) : (
+   827→                                  <Sparkles className="size-3.5" />
+   828→                                )}
+   829→                                AI Generate Description
+   830→                              </Button>
+   831→                            </div>
+   832→                          </CardContent>
+   833→                        </Card>
+   834→                      ))}
+   835→                      <Button
+   836→                        variant="outline"
+   837→                        size="sm"
+   838→                        className="gap-1.5 w-full border-dashed"
+   839→                        onClick={handleAddExperience}
+   840→                      >
+   841→                        <Plus className="size-3.5" />
+   842→                        Add Experience
+   843→                      </Button>
+   844→                    </div>
+   845→                  </CollapsibleContent>
+   846→                </Collapsible>
+   847→              </motion.div>
+   848→
+   849→              <Separator className="opacity-50" />
+   850→
+   851→              {/* ── Education ───────────────────────────────────── */}
+   852→              <motion.div variants={fadeIn} initial="hidden" animate="visible">
+   853→                <Collapsible open={eduOpen} onOpenChange={setEduOpen}>
+   854→                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 hover:text-primary transition-colors">
+   855→                    <h2 className="text-sm font-semibold tracking-tight">Education ({education.length})</h2>
+   856→                    <ChevronDown className={`size-4 text-muted-foreground transition-transform ${eduOpen ? 'rotate-180' : ''}`} />
+   857→                  </CollapsibleTrigger>
+   858→                  <CollapsibleContent>
+   859→                    <div className="space-y-3">
+   860→                      {education.length === 0 && (
+   861→                        <Card className="border-dashed border-border/60">
+   862→                          <CardContent className="py-6 text-center">
+   863→                            <p className="text-sm text-muted-foreground">No education added yet</p>
+   864→                          </CardContent>
+   865→                        </Card>
+   866→                      )}
+   867→                      {education.map((edu) => (
+   868→                        <Card key={edu.id} className="border-border/50 bg-card/50">
+   869→                          <CardHeader className="pb-2 pt-4 px-4">
+   870→                            <div className="flex items-start justify-between">
+   871→                              <CardTitle className="text-sm font-medium">{edu.degree} — {edu.institution}</CardTitle>
+   872→                              <Button
+   873→                                variant="ghost"
+   874→                                size="icon"
+   875→                                className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+   876→                                onClick={() => edu.id && handleDeleteEducation(edu.id)}
+   877→                              >
+   878→                                <Trash2 className="size-3.5" />
+   879→                              </Button>
+   880→                            </div>
+   881→                          </CardHeader>
+   882→                          <CardContent className="px-4 pb-4 space-y-3">
+   883→                            <div className="grid grid-cols-2 gap-3">
+   884→                              <div className="space-y-1.5">
+   885→                                <Label className="text-xs">Institution</Label>
+   886→                                <Input
+   887→                                  value={edu.institution}
+   888→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { institution: e.target.value })}
+   889→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   890→                                />
+   891→                              </div>
+   892→                              <div className="space-y-1.5">
+   893→                                <Label className="text-xs">Degree</Label>
+   894→                                <Input
+   895→                                  value={edu.degree}
+   896→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { degree: e.target.value })}
+   897→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   898→                                />
+   899→                              </div>
+   900→                            </div>
+   901→                            <div className="grid grid-cols-2 gap-3">
+   902→                              <div className="space-y-1.5">
+   903→                                <Label className="text-xs">Field of Study</Label>
+   904→                                <Input
+   905→                                  value={edu.field || ''}
+   906→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { field: e.target.value })}
+   907→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   908→                                  placeholder="Computer Science"
+   909→                                />
+   910→                              </div>
+   911→                              <div className="space-y-1.5">
+   912→                                <Label className="text-xs">Location</Label>
+   913→                                <Input
+   914→                                  value={edu.location || ''}
+   915→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { location: e.target.value })}
+   916→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   917→                                  placeholder="City, State"
+   918→                                />
+   919→                              </div>
+   920→                            </div>
+   921→                            <div className="grid grid-cols-3 gap-3">
+   922→                              <div className="space-y-1.5">
+   923→                                <Label className="text-xs">Start Date</Label>
+   924→                                <Input
+   925→                                  type="month"
+   926→                                  value={edu.startDate}
+   927→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { startDate: e.target.value })}
+   928→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   929→                                />
+   930→                              </div>
+   931→                              <div className="space-y-1.5">
+   932→                                <Label className="text-xs">End Date</Label>
+   933→                                <Input
+   934→                                  type="month"
+   935→                                  value={edu.endDate || ''}
+   936→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { endDate: e.target.value })}
+   937→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   938→                                />
+   939→                              </div>
+   940→                              <div className="space-y-1.5">
+   941→                                <Label className="text-xs">GPA</Label>
+   942→                                <Input
+   943→                                  value={edu.gpa || ''}
+   944→                                  onChange={(e) => edu.id && handleUpdateEducation(edu.id, { gpa: e.target.value })}
+   945→                                  className="h-8 text-sm bg-secondary/50 border-border/50"
+   946→                                  placeholder="3.8"
+   947→                                />
+   948→                              </div>
+   949→                            </div>
+   950→                            <div className="space-y-1.5">
+   951→                              <Label className="text-xs">Description</Label>
+   952→                              <Textarea
+   953→                                value={edu.description || ''}
+   954→                                onChange={(e) => edu.id && handleUpdateEducation(edu.id, { description: e.target.value })}
+   955→                                className="min-h-[60px] text-sm bg-secondary/50 border-border/50 resize-none"
+   956→                                placeholder="Notable achievements, activities…"
+   957→                              />
+   958→                            </div>
+   959→                          </CardContent>
+   960→                        </Card>
+   961→                      ))}
+   962→                      <Button
+   963→                        variant="outline"
+   964→                        size="sm"
+   965→                        className="gap-1.5 w-full border-dashed"
+   966→                        onClick={handleAddEducation}
+   967→                      >
+   968→                        <Plus className="size-3.5" />
+   969→                        Add Education
+   970→                      </Button>
+   971→                    </div>
+   972→                  </CollapsibleContent>
+   973→                </Collapsible>
+   974→              </motion.div>
+   975→
+   976→              <Separator className="opacity-50" />
+   977→
+   978→              {/* ── Skills ──────────────────────────────────────── */}
+   979→              <motion.div variants={fadeIn} initial="hidden" animate="visible">
+   980→                <Collapsible open={skillsOpen} onOpenChange={setSkillsOpen}>
+   981→                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 hover:text-primary transition-colors">
+   982→                    <h2 className="text-sm font-semibold tracking-tight">Skills ({skills.length})</h2>
+   983→                    <ChevronDown className={`size-4 text-muted-foreground transition-transform ${skillsOpen ? 'rotate-180' : ''}`} />
+   984→                  </CollapsibleTrigger>
+   985→                  <CollapsibleContent>
+   986→                    <Card className="border-border/50 bg-card/50">
+   987→                      <CardContent className="p-4 space-y-3">
+   988→                        {/* AI Suggest */}
+   989→                        <Button
+   990→                          variant="outline"
+   991→                          size="sm"
+   992→                          className="gap-1.5 w-full"
+   993→                          onClick={handleAISuggestSkills}
+   994→                          disabled={aiLoading}
+   995→                        >
+   996→                          {aiLoading ? (
+   997→                            <Loader2 className="size-3.5 animate-spin" />
+   998→                          ) : (
+   999→                            <Sparkles className="size-3.5" />
+  1000→                          )}
+  1001→                          AI Suggest Skills
+  1002→                        </Button>
+  1003→
+  1004→                        {/* Skill badges */}
+  1005→                        {skills.length > 0 && (
+  1006→                          <div className="flex flex-wrap gap-2">
+  1007→                            {skills.map((skill) => (
+  1008→                              <Badge
+  1009→                                key={skill.id}
+  1010→                                variant="secondary"
+  1011→                                className="gap-1 pr-1 text-xs"
+  1012→                              >
+  1013→                                <span style={{ color: categoryColor(skill.category) }}>●</span>
+  1014→                                {skill.name}
+  1015→                                <button
+  1016→                                  onClick={() => skill.id && handleDeleteSkill(skill.id)}
+  1017→                                  className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
+  1018→                                >
+  1019→                                  <Trash2 className="size-2.5" />
+  1020→                                </button>
+  1021→                              </Badge>
+  1022→                            ))}
+  1023→                          </div>
+  1024→                        )}
+  1025→
+  1026→                        {skills.length === 0 && (
+  1027→                          <p className="text-xs text-muted-foreground text-center py-2">
+  1028→                            No skills added yet. Use AI suggestions or add manually.
+  1029→                          </p>
+  1030→                        )}
+  1031→
+  1032→                        {/* Add skill manually */}
+  1033→                        <div className="flex gap-2">
+  1034→                          <Input
+  1035→                            value={newSkillName}
+  1036→                            onChange={(e) => setNewSkillName(e.target.value)}
+  1037→                            placeholder="Skill name"
+  1038→                            className="h-8 text-sm bg-secondary/50 border-border/50 flex-1"
+  1039→                            onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
+  1040→                          />
+  1041→                          <Select value={newSkillCategory} onValueChange={(v) => setNewSkillCategory(v as typeof newSkillCategory)}>
+  1042→                            <SelectTrigger className="w-[110px] h-8 text-xs">
+  1043→                              <SelectValue />
+  1044→                            </SelectTrigger>
+  1045→                            <SelectContent>
+  1046→                              <SelectItem value="technical">Technical</SelectItem>
+  1047→                              <SelectItem value="soft">Soft Skill</SelectItem>
+  1048→                              <SelectItem value="language">Language</SelectItem>
+  1049→                              <SelectItem value="other">Other</SelectItem>
+  1050→                            </SelectContent>
+  1051→                          </Select>
+  1052→                          <Button
+  1053→                            size="sm"
+  1054→                            className="h-8 gap-1"
+  1055→                            onClick={handleAddSkill}
+  1056→                            disabled={!newSkillName.trim()}
+  1057→                          >
+  1058→                            <Plus className="size-3.5" />
+  1059→                            Add
+  1060→                          </Button>
+  1061→                        </div>
+  1062→
+  1063→                        {/* Legend */}
+  1064→                        {skills.length > 0 && (
+  1065→                          <div className="flex gap-3 text-[10px] text-muted-foreground">
+  1066→                            {Object.entries(categoryLabels).map(([key, label]) => (
+  1067→                              <span key={key} className="flex items-center gap-1">
+  1068→                                <span style={{ color: categoryColor(key) }}>●</span>
+  1069→                                {label}
+  1070→                              </span>
+  1071→                            ))}
+  1072→                          </div>
+  1073→                        )}
+  1074→                      </CardContent>
+  1075→                    </Card>
+  1076→                  </CollapsibleContent>
+  1077→                </Collapsible>
+  1078→              </motion.div>
+  1079→
+  1080→              {/* Bottom spacer */}
+  1081→              <div className="h-8" />
+  1082→            </div>
+  1083→          </ScrollArea>
+  1084→        </div>
+  1085→
+  1086→        {/* ── Right Panel: Live Preview ────────────────────────── */}
+  1087→        <div className={`flex-1 lg:w-1/2 ${showPreview ? '' : 'hidden lg:block'}`}>
+  1088→          <div className="h-[calc(100vh-56px)] flex flex-col items-center bg-muted/30 p-4 sm:p-6">
+  1089→            {/* Preview toolbar */}
+  1090→            <div className="flex items-center justify-between w-full max-w-[600px] mb-4">
+  1091→              <div className="flex items-center gap-2">
+  1092→                <Eye className="size-4 text-muted-foreground" />
+  1093→                <span className="text-xs font-medium text-muted-foreground">Live Preview</span>
+  1094→              </div>
+  1095→              <Button
+  1096→                variant="ghost"
+  1097→                size="sm"
+  1098→                className="lg:hidden text-xs"
+  1099→                onClick={() => setShowPreview(false)}
+  1100→              >
+  1101→                Back to Editor
+  1102→              </Button>
+  1103→            </div>
+  1104→
+  1105→            {/* A4 Preview */}
+  1106→            <div className="flex-1 overflow-auto w-full flex justify-center">
+  1107→              <div
+  1108→                className="bg-white shadow-2xl rounded-sm origin-top"
+  1109→                style={{
+  1110→                  width: '794px',
+  1111→                  minHeight: '1123px',
+  1112→                  transform: 'scale(0.55)',
+  1113→                  transformOrigin: 'top center',
+  1114→                  marginBottom: '-450px',
+  1115→                }}
+  1116→              >
+  1117→                {renderResume(activeTemplate, resumeData)}
+  1118→              </div>
+  1119→            </div>
+  1120→          </div>
+  1121→        </div>
+  1122→      </div>
+  1123→    </div>
+  1124→  );
+  1125→}
+  1126→
+  1127→// ── Helper: category colors ─────────────────────────────────────
+  1128→function categoryColor(cat: string): string {
+  1129→  switch (cat) {
+  1130→    case 'technical': return '#10b981';
+  1131→    case 'soft': return '#6366f1';
+  1132→    case 'language': return '#f59e0b';
+  1133→    default: return '#8b5cf6';
+  1134→  }
+  1135→}
+  1136→

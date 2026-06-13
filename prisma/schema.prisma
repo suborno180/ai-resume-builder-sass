@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String?
+  avatar    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profile   Profile?
+  resumes   Resume[]
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  firstName   String?
+  lastName    String?
+  jobTitle    String?
+  email       String?
+  phone       String?
+  location    String?
+  website     String?
+  linkedin    String?
+  github      String?
+  summary     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences Experience[]
+  education   Education[]
+  skills      Skill[]
+}
+
+model Experience {
+  id          String   @id @default(cuid())
+  profileId   String
+  company     String
+  position    String
+  location    String?
+  startDate   String
+  endDate     String?
+  current     Boolean  @default(false)
+  description String?
+  order       Int      @default(0)
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id          String   @id @default(cuid())
+  profileId   String
+  institution String
+  degree      String
+  field       String?
+  location    String?
+  startDate   String
+  endDate     String?
+  gpa         String?
+  description String?
+  order       Int      @default(0)
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id        String  @id @default(cuid())
+  profileId String
+  name      String
+  category  String  @default("technical")
+  order     Int     @default(0)
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Resume {
+  id                   String   @id @default(cuid())
+  userId               String
+  title                String
+  templateId           String   @default("modern")
+  targetJobTitle       String   @default("")
+  targetJobDescription String   @default("")
+  content              String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

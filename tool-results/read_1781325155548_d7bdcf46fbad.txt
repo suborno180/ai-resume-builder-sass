@@ -1,0 +1,1360 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { useAppStore } from '@/lib/store';
+     5→import { useSession } from 'next-auth/react';
+     6→import { toast } from 'sonner';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Button } from '@/components/ui/button';
+    10→import { Textarea } from '@/components/ui/textarea';
+    11→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    14→import { Checkbox } from '@/components/ui/checkbox';
+    15→import { Progress } from '@/components/ui/progress';
+    16→import { motion, AnimatePresence } from 'framer-motion';
+    17→import {
+    18→  Sparkles,
+    19→  Plus,
+    20→  Trash2,
+    21→  Edit2,
+    22→  ChevronLeft,
+    23→  ChevronRight,
+    24→  Check,
+    25→  Loader2,
+    26→  Briefcase,
+    27→  GraduationCap,
+    28→  User,
+    29→  FileText,
+    30→  Lightbulb,
+    31→} from 'lucide-react';
+    32→import type { ExperienceData, EducationData, SkillData, ProfileData } from '@/lib/types';
+    33→
+    34→// ── Step definitions ──────────────────────────────────────────
+    35→const STEPS = [
+    36→  { label: 'Personal Info', icon: User },
+    37→  { label: 'Summary', icon: FileText },
+    38→  { label: 'Experience & Education', icon: Briefcase },
+    39→  { label: 'Skills', icon: Lightbulb },
+    40→] as const;
+    41→
+    42→// ── Animation variants ────────────────────────────────────────
+    43→const slideVariants = {
+    44→  enter: (direction: number) => ({
+    45→    x: direction > 0 ? 300 : -300,
+    46→    opacity: 0,
+    47→  }),
+    48→  center: {
+    49→    x: 0,
+    50→    opacity: 1,
+    51→  },
+    52→  exit: (direction: number) => ({
+    53→    x: direction < 0 ? 300 : -300,
+    54→    opacity: 0,
+    55→  }),
+    56→};
+    57→
+    58→// ── Empty form state helpers ──────────────────────────────────
+    59→const emptyExperience = (): ExperienceData => ({
+    60→  company: '',
+    61→  position: '',
+    62→  location: '',
+    63→  startDate: '',
+    64→  endDate: '',
+    65→  current: false,
+    66→  description: '',
+    67→  order: 0,
+    68→});
+    69→
+    70→const emptyEducation = (): EducationData => ({
+    71→  institution: '',
+    72→  degree: '',
+    73→  field: '',
+    74→  location: '',
+    75→  startDate: '',
+    76→  endDate: '',
+    77→  gpa: '',
+    78→  description: '',
+    79→  order: 0,
+    80→});
+    81→
+    82→// ==============================================================
+    83→// Main ProfileSetup Component
+    84→// ==============================================================
+    85→export function ProfileSetup() {
+    86→  const { data: session } = useSession();
+    87→
+    88→  // Store state
+    89→  const {
+    90→    profile,
+    91→    setProfile,
+    92→    experiences,
+    93→    setExperiences,
+    94→    addExperience: addExperienceStore,
+    95→    updateExperience: updateExperienceStore,
+    96→    removeExperience: removeExperienceStore,
+    97→    education,
+    98→    setEducation,
+    99→    addEducation: addEducationStore,
+   100→    updateEducation: updateEducationStore,
+   101→    removeEducation: removeEducationStore,
+   102→    skills,
+   103→    setSkills,
+   104→    addSkill: addSkillStore,
+   105→    removeSkill: removeSkillStore,
+   106→    setView,
+   107→    profileStep,
+   108→    setProfileStep,
+   109→  } = useAppStore();
+   110→
+   111→  // Local state
+   112→  const [currentStep, setCurrentStep] = useState(profileStep);
+   113→  const [direction, setDirection] = useState(0);
+   114→  const [saving, setSaving] = useState(false);
+   115→  const [aiLoading, setAiLoading] = useState(false);
+   116→  const [initialLoading, setInitialLoading] = useState(true);
+   117→
+   118→  // Experience form state
+   119→  const [showExpForm, setShowExpForm] = useState(false);
+   120→  const [editingExpId, setEditingExpId] = useState<string | null>(null);
+   121→  const [expForm, setExpForm] = useState<ExperienceData>(emptyExperience());
+   122→
+   123→  // Education form state
+   124→  const [showEduForm, setShowEduForm] = useState(false);
+   125→  const [editingEduId, setEditingEduId] = useState<string | null>(null);
+   126→  const [eduForm, setEduForm] = useState<EducationData>(emptyEducation());
+   127→
+   128→  // Skill form state
+   129→  const [newSkillName, setNewSkillName] = useState('');
+   130→  const [newSkillCategory, setNewSkillCategory] = useState<'technical' | 'soft' | 'language' | 'other'>('technical');
+   131→
+   132→  // ── Fetch profile data on mount ───────────────────────────
+   133→  const fetchProfile = useCallback(async () => {
+   134→    if (!session?.user?.id) return;
+   135→    try {
+   136→      setInitialLoading(true);
+   137→      const res = await fetch('/api/profile');
+   138→      if (res.ok) {
+   139→        const data = await res.json();
+   140→        const p = data.profile;
+   141→        if (p) {
+   142→          setProfile({
+   143→            id: p.id,
+   144→            firstName: p.firstName || '',
+   145→            lastName: p.lastName || '',
+   146→            jobTitle: p.jobTitle || '',
+   147→            email: p.email || '',
+   148→            phone: p.phone || '',
+   149→            location: p.location || '',
+   150→            website: p.website || '',
+   151→            linkedin: p.linkedin || '',
+   152→            github: p.github || '',
+   153→            summary: p.summary || '',
+   154→          });
+   155→          if (p.experiences) setExperiences(p.experiences);
+   156→          if (p.education) setEducation(p.education);
+   157→          if (p.skills) setSkills(p.skills);
+   158→        }
+   159→      }
+   160→    } catch {
+   161→      toast.error('Failed to load profile data');
+   162→    } finally {
+   163→      setInitialLoading(false);
+   164→    }
+   165→  }, [session?.user?.id, setProfile, setExperiences, setEducation, setSkills]);
+   166→
+   167→  useEffect(() => {
+   168→    fetchProfile();
+   169→  }, [fetchProfile]);
+   170→
+   171→  // ── Save profile (PUT) ──────────────────────────────────────
+   172→  const saveProfile = useCallback(
+   173→    async (data: Partial<ProfileData>) => {
+   174→      if (!session?.user?.id) return;
+   175→      try {
+   176→        const res = await fetch('/api/profile', {
+   177→          method: 'PUT',
+   178→          headers: { 'Content-Type': 'application/json' },
+   179→          body: JSON.stringify(data),
+   180→        });
+   181→        if (res.ok) {
+   182→          const result = await res.json();
+   183→          setProfile(result.profile);
+   184→        }
+   185→      } catch {
+   186→        toast.error('Failed to save profile');
+   187→      }
+   188→    },
+   189→    [session?.user?.id, setProfile]
+   190→  );
+   191→
+   192→  // ── Step navigation ─────────────────────────────────────────
+   193→  const goToStep = useCallback(
+   194→    async (step: number) => {
+   195→      setDirection(step > currentStep ? 1 : -1);
+   196→
+   197→      // Save current step data before transitioning
+   198→      setSaving(true);
+   199→      try {
+   200→        if (currentStep === 0) {
+   201→          await saveProfile({
+   202→            firstName: profile?.firstName,
+   203→            lastName: profile?.lastName,
+   204→            jobTitle: profile?.jobTitle,
+   205→            email: profile?.email,
+   206→            phone: profile?.phone,
+   207→            location: profile?.location,
+   208→            website: profile?.website,
+   209→            linkedin: profile?.linkedin,
+   210→            github: profile?.github,
+   211→          });
+   212→        } else if (currentStep === 1) {
+   213→          await saveProfile({ summary: profile?.summary });
+   214→        }
+   215→      } finally {
+   216→        setSaving(false);
+   217→      }
+   218→
+   219→      setCurrentStep(step);
+   220→      setProfileStep(step);
+   221→    },
+   222→    [currentStep, profile, saveProfile, setProfileStep]
+   223→  );
+   224→
+   225→  const handleNext = () => {
+   226→    if (currentStep < STEPS.length - 1) {
+   227→      goToStep(currentStep + 1);
+   228→    }
+   229→  };
+   230→
+   231→  const handleBack = () => {
+   232→    if (currentStep > 0) {
+   233→      goToStep(currentStep - 1);
+   234→    }
+   235→  };
+   236→
+   237→  const handleComplete = async () => {
+   238→    setSaving(true);
+   239→    try {
+   240→      await saveProfile({ summary: profile?.summary });
+   241→      toast.success('Profile saved successfully!');
+   242→      setView('templates');
+   243→    } finally {
+   244→      setSaving(false);
+   245→    }
+   246→  };
+   247→
+   248→  // ── AI Generate Summary ─────────────────────────────────────
+   249→  const generateSummary = async () => {
+   250→    setAiLoading(true);
+   251→    try {
+   252→      const res = await fetch('/api/ai/generate', {
+   253→        method: 'POST',
+   254→        headers: { 'Content-Type': 'application/json' },
+   255→        body: JSON.stringify({
+   256→          type: 'summary',
+   257→          context: {
+   258→            firstName: profile?.firstName,
+   259→            lastName: profile?.lastName,
+   260→            jobTitle: profile?.jobTitle,
+   261→            experiences: experiences.map((e) => ({
+   262→              position: e.position,
+   263→              company: e.company,
+   264→              description: e.description,
+   265→            })),
+   266→            skills: skills.map((s) => ({ name: s.name, category: s.category })),
+   267→            summary: profile?.summary,
+   268→          },
+   269→        }),
+   270→      });
+   271→      const data = await res.json();
+   272→      if (data.content) {
+   273→        setProfile({ ...profile!, summary: data.content });
+   274→        toast.success('Summary generated!');
+   275→      }
+   276→    } catch {
+   277→      toast.error('Failed to generate summary');
+   278→    } finally {
+   279→      setAiLoading(false);
+   280→    }
+   281→  };
+   282→
+   283→  // ── AI Suggest Skills ───────────────────────────────────────
+   284→  const suggestSkills = async () => {
+   285→    setAiLoading(true);
+   286→    try {
+   287→      const res = await fetch('/api/ai/generate', {
+   288→        method: 'POST',
+   289→        headers: { 'Content-Type': 'application/json' },
+   290→        body: JSON.stringify({
+   291→          type: 'skills',
+   292→          context: {
+   293→            jobTitle: profile?.jobTitle,
+   294→            currentSkills: skills.map((s) => s.name),
+   295→          },
+   296→        }),
+   297→      });
+   298→      const data = await res.json();
+   299→      if (Array.isArray(data.content)) {
+   300→        let addedCount = 0;
+   301→        for (const skill of data.content) {
+   302→          // Avoid duplicates
+   303→          const exists = skills.some(
+   304→            (s) => s.name.toLowerCase() === skill.name?.toLowerCase()
+   305→          );
+   306→          if (!exists && skill.name) {
+   307→            // Save to API
+   308→            const skillRes = await fetch('/api/profile/skill', {
+   309→              method: 'POST',
+   310→              headers: { 'Content-Type': 'application/json' },
+   311→              body: JSON.stringify({
+   312→                name: skill.name,
+   313→                category: skill.category || 'technical',
+   314→                order: skills.length + addedCount,
+   315→              }),
+   316→            });
+   317→            if (skillRes.ok) {
+   318→              const skillData = await skillRes.json();
+   319→              addSkillStore(skillData.skill);
+   320→              addedCount++;
+   321→            }
+   322→          }
+   323→        }
+   324→        if (addedCount > 0) {
+   325→          toast.success(`${addedCount} skills added!`);
+   326→        } else {
+   327→          toast.info('No new skills to add');
+   328→        }
+   329→      }
+   330→    } catch {
+   331→      toast.error('Failed to suggest skills');
+   332→    } finally {
+   333→      setAiLoading(false);
+   334→    }
+   335→  };
+   336→
+   337→  // ── Experience CRUD ─────────────────────────────────────────
+   338→  const handleSaveExperience = async () => {
+   339→    if (!expForm.company || !expForm.position || !expForm.startDate) {
+   340→      toast.error('Company, position, and start date are required');
+   341→      return;
+   342→    }
+   343→
+   344→    try {
+   345→      if (editingExpId) {
+   346→        // Update
+   347→        const res = await fetch('/api/profile/experience', {
+   348→          method: 'PUT',
+   349→          headers: { 'Content-Type': 'application/json' },
+   350→          body: JSON.stringify({ id: editingExpId, ...expForm }),
+   351→        });
+   352→        if (res.ok) {
+   353→          const data = await res.json();
+   354→          updateExperienceStore(editingExpId, data.experience);
+   355→          toast.success('Experience updated');
+   356→        }
+   357→      } else {
+   358→        // Create
+   359→        const res = await fetch('/api/profile/experience', {
+   360→          method: 'POST',
+   361→          headers: { 'Content-Type': 'application/json' },
+   362→          body: JSON.stringify({ ...expForm, order: experiences.length }),
+   363→        });
+   364→        if (res.ok) {
+   365→          const data = await res.json();
+   366→          addExperienceStore(data.experience);
+   367→          toast.success('Experience added');
+   368→        }
+   369→      }
+   370→      setShowExpForm(false);
+   371→      setEditingExpId(null);
+   372→      setExpForm(emptyExperience());
+   373→    } catch {
+   374→      toast.error('Failed to save experience');
+   375→    }
+   376→  };
+   377→
+   378→  const handleDeleteExperience = async (id: string) => {
+   379→    try {
+   380→      const res = await fetch('/api/profile/experience', {
+   381→        method: 'DELETE',
+   382→        headers: { 'Content-Type': 'application/json' },
+   383→        body: JSON.stringify({ id }),
+   384→      });
+   385→      if (res.ok) {
+   386→        removeExperienceStore(id);
+   387→        toast.success('Experience deleted');
+   388→      }
+   389→    } catch {
+   390→      toast.error('Failed to delete experience');
+   391→    }
+   392→  };
+   393→
+   394→  const handleEditExperience = (exp: ExperienceData) => {
+   395→    setEditingExpId(exp.id || null);
+   396→    setExpForm({ ...exp });
+   397→    setShowExpForm(true);
+   398→  };
+   399→
+   400→  // ── Education CRUD ──────────────────────────────────────────
+   401→  const handleSaveEducation = async () => {
+   402→    if (!eduForm.institution || !eduForm.degree || !eduForm.startDate) {
+   403→      toast.error('Institution, degree, and start date are required');
+   404→      return;
+   405→    }
+   406→
+   407→    try {
+   408→      if (editingEduId) {
+   409→        // Update
+   410→        const res = await fetch('/api/profile/education', {
+   411→          method: 'PUT',
+   412→          headers: { 'Content-Type': 'application/json' },
+   413→          body: JSON.stringify({ id: editingEduId, ...eduForm }),
+   414→        });
+   415→        if (res.ok) {
+   416→          const data = await res.json();
+   417→          updateEducationStore(editingEduId, data.education);
+   418→          toast.success('Education updated');
+   419→        }
+   420→      } else {
+   421→        // Create
+   422→        const res = await fetch('/api/profile/education', {
+   423→          method: 'POST',
+   424→          headers: { 'Content-Type': 'application/json' },
+   425→          body: JSON.stringify({ ...eduForm, order: education.length }),
+   426→        });
+   427→        if (res.ok) {
+   428→          const data = await res.json();
+   429→          addEducationStore(data.education);
+   430→          toast.success('Education added');
+   431→        }
+   432→      }
+   433→      setShowEduForm(false);
+   434→      setEditingEduId(null);
+   435→      setEduForm(emptyEducation());
+   436→    } catch {
+   437→      toast.error('Failed to save education');
+   438→    }
+   439→  };
+   440→
+   441→  const handleDeleteEducation = async (id: string) => {
+   442→    try {
+   443→      const res = await fetch('/api/profile/education', {
+   444→        method: 'DELETE',
+   445→        headers: { 'Content-Type': 'application/json' },
+   446→        body: JSON.stringify({ id }),
+   447→      });
+   448→      if (res.ok) {
+   449→        removeEducationStore(id);
+   450→        toast.success('Education deleted');
+   451→      }
+   452→    } catch {
+   453→      toast.error('Failed to delete education');
+   454→    }
+   455→  };
+   456→
+   457→  const handleEditEducation = (edu: EducationData) => {
+   458→    setEditingEduId(edu.id || null);
+   459→    setEduForm({ ...edu });
+   460→    setShowEduForm(true);
+   461→  };
+   462→
+   463→  // ── Skill CRUD ──────────────────────────────────────────────
+   464→  const handleAddSkill = async () => {
+   465→    if (!newSkillName.trim()) {
+   466→      toast.error('Skill name is required');
+   467→      return;
+   468→    }
+   469→    // Check duplicate
+   470→    if (skills.some((s) => s.name.toLowerCase() === newSkillName.trim().toLowerCase())) {
+   471→      toast.error('Skill already exists');
+   472→      return;
+   473→    }
+   474→
+   475→    try {
+   476→      const res = await fetch('/api/profile/skill', {
+   477→        method: 'POST',
+   478→        headers: { 'Content-Type': 'application/json' },
+   479→        body: JSON.stringify({
+   480→          name: newSkillName.trim(),
+   481→          category: newSkillCategory,
+   482→          order: skills.length,
+   483→        }),
+   484→      });
+   485→      if (res.ok) {
+   486→        const data = await res.json();
+   487→        addSkillStore(data.skill);
+   488→        setNewSkillName('');
+   489→        toast.success('Skill added');
+   490→      }
+   491→    } catch {
+   492→      toast.error('Failed to add skill');
+   493→    }
+   494→  };
+   495→
+   496→  const handleDeleteSkill = async (id: string) => {
+   497→    try {
+   498→      const res = await fetch('/api/profile/skill', {
+   499→        method: 'DELETE',
+   500→        headers: { 'Content-Type': 'application/json' },
+   501→        body: JSON.stringify({ id }),
+   502→      });
+   503→      if (res.ok) {
+   504→        removeSkillStore(id);
+   505→        toast.success('Skill removed');
+   506→      }
+   507→    } catch {
+   508→      toast.error('Failed to remove skill');
+   509→    }
+   510→  };
+   511→
+   512→  // ── Profile field updater ───────────────────────────────────
+   513→  const updateProfileField = (field: keyof ProfileData, value: string) => {
+   514→    if (profile) {
+   515→      setProfile({ ...profile, [field]: value });
+   516→    }
+   517→  };
+   518→
+   519→  // ── Progress ────────────────────────────────────────────────
+   520→  const progressValue = ((currentStep + 1) / STEPS.length) * 100;
+   521→
+   522→  // ── Loading state ───────────────────────────────────────────
+   523→  if (initialLoading) {
+   524→    return (
+   525→      <div className="flex items-center justify-center min-h-[60vh]">
+   526→        <Loader2 className="size-8 animate-spin text-primary" />
+   527→      </div>
+   528→    );
+   529→  }
+   530→
+   531→  // ================================================================
+   532→  // Render Step Content
+   533→  // ================================================================
+   534→  const renderStepContent = () => {
+   535→    switch (currentStep) {
+   536→      // ── Step 1: Personal Info ──────────────────────────────
+   537→      case 0:
+   538→        return (
+   539→          <div className="space-y-6">
+   540→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   541→              <div className="space-y-2">
+   542→                <Label htmlFor="firstName">First Name</Label>
+   543→                <Input
+   544→                  id="firstName"
+   545→                  placeholder="John"
+   546→                  value={profile?.firstName || ''}
+   547→                  onChange={(e) => updateProfileField('firstName', e.target.value)}
+   548→                  className="bg-secondary/50 border-border/50"
+   549→                />
+   550→              </div>
+   551→              <div className="space-y-2">
+   552→                <Label htmlFor="lastName">Last Name</Label>
+   553→                <Input
+   554→                  id="lastName"
+   555→                  placeholder="Doe"
+   556→                  value={profile?.lastName || ''}
+   557→                  onChange={(e) => updateProfileField('lastName', e.target.value)}
+   558→                  className="bg-secondary/50 border-border/50"
+   559→                />
+   560→              </div>
+   561→            </div>
+   562→
+   563→            <div className="space-y-2">
+   564→              <Label htmlFor="jobTitle">Job Title</Label>
+   565→              <Input
+   566→                id="jobTitle"
+   567→                placeholder="Senior Software Engineer"
+   568→                value={profile?.jobTitle || ''}
+   569→                onChange={(e) => updateProfileField('jobTitle', e.target.value)}
+   570→                className="bg-secondary/50 border-border/50"
+   571→              />
+   572→            </div>
+   573→
+   574→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   575→              <div className="space-y-2">
+   576→                <Label htmlFor="email">Email</Label>
+   577→                <Input
+   578→                  id="email"
+   579→                  type="email"
+   580→                  placeholder="john@example.com"
+   581→                  value={profile?.email || ''}
+   582→                  onChange={(e) => updateProfileField('email', e.target.value)}
+   583→                  className="bg-secondary/50 border-border/50"
+   584→                />
+   585→              </div>
+   586→              <div className="space-y-2">
+   587→                <Label htmlFor="phone">Phone</Label>
+   588→                <Input
+   589→                  id="phone"
+   590→                  placeholder="+1 (555) 123-4567"
+   591→                  value={profile?.phone || ''}
+   592→                  onChange={(e) => updateProfileField('phone', e.target.value)}
+   593→                  className="bg-secondary/50 border-border/50"
+   594→                />
+   595→              </div>
+   596→            </div>
+   597→
+   598→            <div className="space-y-2">
+   599→              <Label htmlFor="location">Location</Label>
+   600→              <Input
+   601→                id="location"
+   602→                placeholder="San Francisco, CA"
+   603→                value={profile?.location || ''}
+   604→                onChange={(e) => updateProfileField('location', e.target.value)}
+   605→                className="bg-secondary/50 border-border/50"
+   606→              />
+   607→            </div>
+   608→
+   609→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   610→              <div className="space-y-2">
+   611→                <Label htmlFor="website">Website</Label>
+   612→                <Input
+   613→                  id="website"
+   614→                  placeholder="https://johndoe.com"
+   615→                  value={profile?.website || ''}
+   616→                  onChange={(e) => updateProfileField('website', e.target.value)}
+   617→                  className="bg-secondary/50 border-border/50"
+   618→                />
+   619→              </div>
+   620→              <div className="space-y-2">
+   621→                <Label htmlFor="linkedin">LinkedIn</Label>
+   622→                <Input
+   623→                  id="linkedin"
+   624→                  placeholder="linkedin.com/in/johndoe"
+   625→                  value={profile?.linkedin || ''}
+   626→                  onChange={(e) => updateProfileField('linkedin', e.target.value)}
+   627→                  className="bg-secondary/50 border-border/50"
+   628→                />
+   629→              </div>
+   630→              <div className="space-y-2">
+   631→                <Label htmlFor="github">GitHub</Label>
+   632→                <Input
+   633→                  id="github"
+   634→                  placeholder="github.com/johndoe"
+   635→                  value={profile?.github || ''}
+   636→                  onChange={(e) => updateProfileField('github', e.target.value)}
+   637→                  className="bg-secondary/50 border-border/50"
+   638→                />
+   639→              </div>
+   640→            </div>
+   641→          </div>
+   642→        );
+   643→
+   644→      // ── Step 2: Summary ───────────────────────────────────
+   645→      case 1:
+   646→        return (
+   647→          <div className="space-y-4">
+   648→            <div className="flex items-center justify-between">
+   649→              <Label htmlFor="summary" className="text-base">
+   650→                Professional Summary
+   651→              </Label>
+   652→              <Button
+   653→                type="button"
+   654→                variant="outline"
+   655→                size="sm"
+   656→                onClick={generateSummary}
+   657→                disabled={aiLoading}
+   658→                className="gap-1.5"
+   659→              >
+   660→                {aiLoading ? (
+   661→                  <Loader2 className="size-3.5 animate-spin" />
+   662→                ) : (
+   663→                  <Sparkles className="size-3.5" />
+   664→                )}
+   665→                AI Generate
+   666→              </Button>
+   667→            </div>
+   668→            <Textarea
+   669→              id="summary"
+   670→              placeholder="Write a brief professional summary highlighting your experience, skills, and career goals..."
+   671→              value={profile?.summary || ''}
+   672→              onChange={(e) => updateProfileField('summary', e.target.value)}
+   673→              className="min-h-[200px] bg-secondary/50 border-border/50 resize-y"
+   674→            />
+   675→            <p className="text-xs text-muted-foreground">
+   676→              Tip: Click &quot;AI Generate&quot; to create a summary based on your profile, or write your own.
+   677→            </p>
+   678→          </div>
+   679→        );
+   680→
+   681→      // ── Step 3: Experience & Education ────────────────────
+   682→      case 2:
+   683→        return (
+   684→          <div className="space-y-8">
+   685→            {/* Experience Section */}
+   686→            <div className="space-y-4">
+   687→              <div className="flex items-center justify-between">
+   688→                <h3 className="text-lg font-semibold flex items-center gap-2">
+   689→                  <Briefcase className="size-5 text-primary" />
+   690→                  Work Experience
+   691→                </h3>
+   692→                <Button
+   693→                  type="button"
+   694→                  variant="outline"
+   695→                  size="sm"
+   696→                  onClick={() => {
+   697→                    setEditingExpId(null);
+   698→                    setExpForm(emptyExperience());
+   699→                    setShowExpForm(true);
+   700→                  }}
+   701→                  className="gap-1.5"
+   702→                >
+   703→                  <Plus className="size-3.5" />
+   704→                  Add Experience
+   705→                </Button>
+   706→              </div>
+   707→
+   708→              {/* Experience Form */}
+   709→              <AnimatePresence>
+   710→                {showExpForm && (
+   711→                  <motion.div
+   712→                    initial={{ height: 0, opacity: 0 }}
+   713→                    animate={{ height: 'auto', opacity: 1 }}
+   714→                    exit={{ height: 0, opacity: 0 }}
+   715→                    transition={{ duration: 0.2 }}
+   716→                    className="overflow-hidden"
+   717→                  >
+   718→                    <Card className="border-primary/20 bg-secondary/30">
+   719→                      <CardContent className="p-4 space-y-4">
+   720→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   721→                          <div className="space-y-2">
+   722→                            <Label>Company *</Label>
+   723→                            <Input
+   724→                              placeholder="Google"
+   725→                              value={expForm.company}
+   726→                              onChange={(e) =>
+   727→                                setExpForm({ ...expForm, company: e.target.value })
+   728→                              }
+   729→                              className="bg-background/50 border-border/50"
+   730→                            />
+   731→                          </div>
+   732→                          <div className="space-y-2">
+   733→                            <Label>Position *</Label>
+   734→                            <Input
+   735→                              placeholder="Senior Engineer"
+   736→                              value={expForm.position}
+   737→                              onChange={(e) =>
+   738→                                setExpForm({ ...expForm, position: e.target.value })
+   739→                              }
+   740→                              className="bg-background/50 border-border/50"
+   741→                            />
+   742→                          </div>
+   743→                        </div>
+   744→                        <div className="space-y-2">
+   745→                          <Label>Location</Label>
+   746→                          <Input
+   747→                            placeholder="Mountain View, CA"
+   748→                            value={expForm.location || ''}
+   749→                            onChange={(e) =>
+   750→                              setExpForm({ ...expForm, location: e.target.value })
+   751→                            }
+   752→                            className="bg-background/50 border-border/50"
+   753→                          />
+   754→                        </div>
+   755→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   756→                          <div className="space-y-2">
+   757→                            <Label>Start Date *</Label>
+   758→                            <Input
+   759→                              type="month"
+   760→                              value={expForm.startDate}
+   761→                              onChange={(e) =>
+   762→                                setExpForm({ ...expForm, startDate: e.target.value })
+   763→                              }
+   764→                              className="bg-background/50 border-border/50"
+   765→                            />
+   766→                          </div>
+   767→                          <div className="space-y-2">
+   768→                            <Label>End Date</Label>
+   769→                            <Input
+   770→                              type="month"
+   771→                              value={expForm.endDate || ''}
+   772→                              onChange={(e) =>
+   773→                                setExpForm({ ...expForm, endDate: e.target.value })
+   774→                              }
+   775→                              disabled={expForm.current}
+   776→                              className="bg-background/50 border-border/50"
+   777→                            />
+   778→                          </div>
+   779→                        </div>
+   780→                        <div className="flex items-center gap-2">
+   781→                          <Checkbox
+   782→                            id="exp-current"
+   783→                            checked={expForm.current}
+   784→                            onCheckedChange={(checked) =>
+   785→                              setExpForm({
+   786→                                ...expForm,
+   787→                                current: checked === true,
+   788→                                endDate: checked === true ? '' : expForm.endDate,
+   789→                              })
+   790→                            }
+   791→                          />
+   792→                          <Label htmlFor="exp-current" className="cursor-pointer">
+   793→                            I currently work here
+   794→                          </Label>
+   795→                        </div>
+   796→                        <div className="space-y-2">
+   797→                          <Label>Description</Label>
+   798→                          <Textarea
+   799→                            placeholder="Describe your responsibilities and achievements..."
+   800→                            value={expForm.description || ''}
+   801→                            onChange={(e) =>
+   802→                              setExpForm({ ...expForm, description: e.target.value })
+   803→                            }
+   804→                            className="min-h-[100px] bg-background/50 border-border/50 resize-y"
+   805→                          />
+   806→                        </div>
+   807→                        <div className="flex gap-2 justify-end">
+   808→                          <Button
+   809→                            type="button"
+   810→                            variant="ghost"
+   811→                            size="sm"
+   812→                            onClick={() => {
+   813→                              setShowExpForm(false);
+   814→                              setEditingExpId(null);
+   815→                            }}
+   816→                          >
+   817→                            Cancel
+   818→                          </Button>
+   819→                          <Button
+   820→                            type="button"
+   821→                            size="sm"
+   822→                            onClick={handleSaveExperience}
+   823→                          >
+   824→                            {editingExpId ? 'Update' : 'Save'}
+   825→                          </Button>
+   826→                        </div>
+   827→                      </CardContent>
+   828→                    </Card>
+   829→                  </motion.div>
+   830→                )}
+   831→              </AnimatePresence>
+   832→
+   833→              {/* Experience Cards */}
+   834→              {experiences.length === 0 && !showExpForm ? (
+   835→                <div className="text-center py-8 text-muted-foreground border border-dashed border-border/50 rounded-lg">
+   836→                  <Briefcase className="size-8 mx-auto mb-2 opacity-50" />
+   837→                  <p>No experience added yet</p>
+   838→                  <p className="text-xs">Click &quot;Add Experience&quot; to get started</p>
+   839→                </div>
+   840→              ) : (
+   841→                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+   842→                  {experiences.map((exp) => (
+   843→                    <Card key={exp.id} className="bg-secondary/20 hover:bg-secondary/30 transition-colors">
+   844→                      <CardContent className="p-4">
+   845→                        <div className="flex items-start justify-between gap-2">
+   846→                          <div className="flex-1 min-w-0">
+   847→                            <h4 className="font-semibold text-sm truncate">
+   848→                              {exp.position}
+   849→                            </h4>
+   850→                            <p className="text-sm text-muted-foreground truncate">
+   851→                              {exp.company}
+   852→                              {exp.location ? ` · ${exp.location}` : ''}
+   853→                            </p>
+   854→                            <p className="text-xs text-muted-foreground mt-1">
+   855→                              {exp.startDate} — {exp.current ? 'Present' : exp.endDate || 'N/A'}
+   856→                            </p>
+   857→                            {exp.description && (
+   858→                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+   859→                                {exp.description}
+   860→                              </p>
+   861→                            )}
+   862→                          </div>
+   863→                          <div className="flex gap-1 shrink-0">
+   864→                            <Button
+   865→                              type="button"
+   866→                              variant="ghost"
+   867→                              size="icon"
+   868→                              className="size-8"
+   869→                              onClick={() => handleEditExperience(exp)}
+   870→                            >
+   871→                              <Edit2 className="size-3.5" />
+   872→                            </Button>
+   873→                            <Button
+   874→                              type="button"
+   875→                              variant="ghost"
+   876→                              size="icon"
+   877→                              className="size-8 text-destructive hover:text-destructive"
+   878→                              onClick={() => exp.id && handleDeleteExperience(exp.id)}
+   879→                            >
+   880→                              <Trash2 className="size-3.5" />
+   881→                            </Button>
+   882→                          </div>
+   883→                        </div>
+   884→                      </CardContent>
+   885→                    </Card>
+   886→                  ))}
+   887→                </div>
+   888→              )}
+   889→            </div>
+   890→
+   891→            {/* Education Section */}
+   892→            <div className="space-y-4">
+   893→              <div className="flex items-center justify-between">
+   894→                <h3 className="text-lg font-semibold flex items-center gap-2">
+   895→                  <GraduationCap className="size-5 text-primary" />
+   896→                  Education
+   897→                </h3>
+   898→                <Button
+   899→                  type="button"
+   900→                  variant="outline"
+   901→                  size="sm"
+   902→                  onClick={() => {
+   903→                    setEditingEduId(null);
+   904→                    setEduForm(emptyEducation());
+   905→                    setShowEduForm(true);
+   906→                  }}
+   907→                  className="gap-1.5"
+   908→                >
+   909→                  <Plus className="size-3.5" />
+   910→                  Add Education
+   911→                </Button>
+   912→              </div>
+   913→
+   914→              {/* Education Form */}
+   915→              <AnimatePresence>
+   916→                {showEduForm && (
+   917→                  <motion.div
+   918→                    initial={{ height: 0, opacity: 0 }}
+   919→                    animate={{ height: 'auto', opacity: 1 }}
+   920→                    exit={{ height: 0, opacity: 0 }}
+   921→                    transition={{ duration: 0.2 }}
+   922→                    className="overflow-hidden"
+   923→                  >
+   924→                    <Card className="border-primary/20 bg-secondary/30">
+   925→                      <CardContent className="p-4 space-y-4">
+   926→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   927→                          <div className="space-y-2">
+   928→                            <Label>Institution *</Label>
+   929→                            <Input
+   930→                              placeholder="MIT"
+   931→                              value={eduForm.institution}
+   932→                              onChange={(e) =>
+   933→                                setEduForm({ ...eduForm, institution: e.target.value })
+   934→                              }
+   935→                              className="bg-background/50 border-border/50"
+   936→                            />
+   937→                          </div>
+   938→                          <div className="space-y-2">
+   939→                            <Label>Degree *</Label>
+   940→                            <Input
+   941→                              placeholder="Bachelor of Science"
+   942→                              value={eduForm.degree}
+   943→                              onChange={(e) =>
+   944→                                setEduForm({ ...eduForm, degree: e.target.value })
+   945→                              }
+   946→                              className="bg-background/50 border-border/50"
+   947→                            />
+   948→                          </div>
+   949→                        </div>
+   950→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   951→                          <div className="space-y-2">
+   952→                            <Label>Field of Study</Label>
+   953→                            <Input
+   954→                              placeholder="Computer Science"
+   955→                              value={eduForm.field || ''}
+   956→                              onChange={(e) =>
+   957→                                setEduForm({ ...eduForm, field: e.target.value })
+   958→                              }
+   959→                              className="bg-background/50 border-border/50"
+   960→                            />
+   961→                          </div>
+   962→                          <div className="space-y-2">
+   963→                            <Label>Location</Label>
+   964→                            <Input
+   965→                              placeholder="Cambridge, MA"
+   966→                              value={eduForm.location || ''}
+   967→                              onChange={(e) =>
+   968→                                setEduForm({ ...eduForm, location: e.target.value })
+   969→                              }
+   970→                              className="bg-background/50 border-border/50"
+   971→                            />
+   972→                          </div>
+   973→                        </div>
+   974→                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   975→                          <div className="space-y-2">
+   976→                            <Label>Start Date *</Label>
+   977→                            <Input
+   978→                              type="month"
+   979→                              value={eduForm.startDate}
+   980→                              onChange={(e) =>
+   981→                                setEduForm({ ...eduForm, startDate: e.target.value })
+   982→                              }
+   983→                              className="bg-background/50 border-border/50"
+   984→                            />
+   985→                          </div>
+   986→                          <div className="space-y-2">
+   987→                            <Label>End Date</Label>
+   988→                            <Input
+   989→                              type="month"
+   990→                              value={eduForm.endDate || ''}
+   991→                              onChange={(e) =>
+   992→                                setEduForm({ ...eduForm, endDate: e.target.value })
+   993→                              }
+   994→                              className="bg-background/50 border-border/50"
+   995→                            />
+   996→                          </div>
+   997→                          <div className="space-y-2">
+   998→                            <Label>GPA</Label>
+   999→                            <Input
+  1000→                              placeholder="3.8/4.0"
+  1001→                              value={eduForm.gpa || ''}
+  1002→                              onChange={(e) =>
+  1003→                                setEduForm({ ...eduForm, gpa: e.target.value })
+  1004→                              }
+  1005→                              className="bg-background/50 border-border/50"
+  1006→                            />
+  1007→                          </div>
+  1008→                        </div>
+  1009→                        <div className="space-y-2">
+  1010→                          <Label>Description</Label>
+  1011→                          <Textarea
+  1012→                            placeholder="Notable achievements, activities..."
+  1013→                            value={eduForm.description || ''}
+  1014→                            onChange={(e) =>
+  1015→                              setEduForm({ ...eduForm, description: e.target.value })
+  1016→                            }
+  1017→                            className="min-h-[80px] bg-background/50 border-border/50 resize-y"
+  1018→                          />
+  1019→                        </div>
+  1020→                        <div className="flex gap-2 justify-end">
+  1021→                          <Button
+  1022→                            type="button"
+  1023→                            variant="ghost"
+  1024→                            size="sm"
+  1025→                            onClick={() => {
+  1026→                              setShowEduForm(false);
+  1027→                              setEditingEduId(null);
+  1028→                            }}
+  1029→                          >
+  1030→                            Cancel
+  1031→                          </Button>
+  1032→                          <Button
+  1033→                            type="button"
+  1034→                            size="sm"
+  1035→                            onClick={handleSaveEducation}
+  1036→                          >
+  1037→                            {editingEduId ? 'Update' : 'Save'}
+  1038→                          </Button>
+  1039→                        </div>
+  1040→                      </CardContent>
+  1041→                    </Card>
+  1042→                  </motion.div>
+  1043→                )}
+  1044→              </AnimatePresence>
+  1045→
+  1046→              {/* Education Cards */}
+  1047→              {education.length === 0 && !showEduForm ? (
+  1048→                <div className="text-center py-8 text-muted-foreground border border-dashed border-border/50 rounded-lg">
+  1049→                  <GraduationCap className="size-8 mx-auto mb-2 opacity-50" />
+  1050→                  <p>No education added yet</p>
+  1051→                  <p className="text-xs">Click &quot;Add Education&quot; to get started</p>
+  1052→                </div>
+  1053→              ) : (
+  1054→                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+  1055→                  {education.map((edu) => (
+  1056→                    <Card key={edu.id} className="bg-secondary/20 hover:bg-secondary/30 transition-colors">
+  1057→                      <CardContent className="p-4">
+  1058→                        <div className="flex items-start justify-between gap-2">
+  1059→                          <div className="flex-1 min-w-0">
+  1060→                            <h4 className="font-semibold text-sm truncate">
+  1061→                              {edu.degree}
+  1062→                              {edu.field ? ` in ${edu.field}` : ''}
+  1063→                            </h4>
+  1064→                            <p className="text-sm text-muted-foreground truncate">
+  1065→                              {edu.institution}
+  1066→                              {edu.location ? ` · ${edu.location}` : ''}
+  1067→                            </p>
+  1068→                            <p className="text-xs text-muted-foreground mt-1">
+  1069→                              {edu.startDate} — {edu.endDate || 'N/A'}
+  1070→                              {edu.gpa ? ` · GPA: ${edu.gpa}` : ''}
+  1071→                            </p>
+  1072→                            {edu.description && (
+  1073→                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+  1074→                                {edu.description}
+  1075→                              </p>
+  1076→                            )}
+  1077→                          </div>
+  1078→                          <div className="flex gap-1 shrink-0">
+  1079→                            <Button
+  1080→                              type="button"
+  1081→                              variant="ghost"
+  1082→                              size="icon"
+  1083→                              className="size-8"
+  1084→                              onClick={() => handleEditEducation(edu)}
+  1085→                            >
+  1086→                              <Edit2 className="size-3.5" />
+  1087→                            </Button>
+  1088→                            <Button
+  1089→                              type="button"
+  1090→                              variant="ghost"
+  1091→                              size="icon"
+  1092→                              className="size-8 text-destructive hover:text-destructive"
+  1093→                              onClick={() => edu.id && handleDeleteEducation(edu.id)}
+  1094→                            >
+  1095→                              <Trash2 className="size-3.5" />
+  1096→                            </Button>
+  1097→                          </div>
+  1098→                        </div>
+  1099→                      </CardContent>
+  1100→                    </Card>
+  1101→                  ))}
+  1102→                </div>
+  1103→              )}
+  1104→            </div>
+  1105→          </div>
+  1106→        );
+  1107→
+  1108→      // ── Step 4: Skills ────────────────────────────────────
+  1109→      case 3:
+  1110→        return (
+  1111→          <div className="space-y-6">
+  1112→            <div className="flex items-center justify-between">
+  1113→              <h3 className="text-lg font-semibold">Your Skills</h3>
+  1114→              <Button
+  1115→                type="button"
+  1116→                variant="outline"
+  1117→                size="sm"
+  1118→                onClick={suggestSkills}
+  1119→                disabled={aiLoading}
+  1120→                className="gap-1.5"
+  1121→              >
+  1122→                {aiLoading ? (
+  1123→                  <Loader2 className="size-3.5 animate-spin" />
+  1124→                ) : (
+  1125→                  <Sparkles className="size-3.5" />
+  1126→                )}
+  1127→                AI Suggest Skills
+  1128→              </Button>
+  1129→            </div>
+  1130→
+  1131→            {/* Add Skill Form */}
+  1132→            <div className="flex gap-2">
+  1133→              <Input
+  1134→                placeholder="Enter a skill (e.g. React, Leadership)"
+  1135→                value={newSkillName}
+  1136→                onChange={(e) => setNewSkillName(e.target.value)}
+  1137→                onKeyDown={(e) => {
+  1138→                  if (e.key === 'Enter') {
+  1139→                    e.preventDefault();
+  1140→                    handleAddSkill();
+  1141→                  }
+  1142→                }}
+  1143→                className="flex-1 bg-secondary/50 border-border/50"
+  1144→              />
+  1145→              <Select
+  1146→                value={newSkillCategory}
+  1147→                onValueChange={(v) =>
+  1148→                  setNewSkillCategory(v as 'technical' | 'soft' | 'language' | 'other')
+  1149→                }
+  1150→              >
+  1151→                <SelectTrigger className="w-[140px] bg-secondary/50 border-border/50">
+  1152→                  <SelectValue />
+  1153→                </SelectTrigger>
+  1154→                <SelectContent>
+  1155→                  <SelectItem value="technical">Technical</SelectItem>
+  1156→                  <SelectItem value="soft">Soft</SelectItem>
+  1157→                  <SelectItem value="language">Language</SelectItem>
+  1158→                  <SelectItem value="other">Other</SelectItem>
+  1159→                </SelectContent>
+  1160→              </Select>
+  1161→              <Button type="button" size="icon" onClick={handleAddSkill}>
+  1162→                <Plus className="size-4" />
+  1163→              </Button>
+  1164→            </div>
+  1165→
+  1166→            {/* Skills by Category */}
+  1167→            {skills.length === 0 ? (
+  1168→              <div className="text-center py-8 text-muted-foreground border border-dashed border-border/50 rounded-lg">
+  1169→                <Lightbulb className="size-8 mx-auto mb-2 opacity-50" />
+  1170→                <p>No skills added yet</p>
+  1171→                <p className="text-xs">Add skills manually or use AI suggestions</p>
+  1172→              </div>
+  1173→            ) : (
+  1174→              <div className="space-y-4">
+  1175→                {(['technical', 'soft', 'language', 'other'] as const).map((category) => {
+  1176→                  const categorySkills = skills.filter((s) => s.category === category);
+  1177→                  if (categorySkills.length === 0) return null;
+  1178→
+  1179→                  const categoryLabel: Record<string, string> = {
+  1180→                    technical: 'Technical Skills',
+  1181→                    soft: 'Soft Skills',
+  1182→                    language: 'Languages',
+  1183→                    other: 'Other Skills',
+  1184→                  };
+  1185→
+  1186→                  return (
+  1187→                    <div key={category} className="space-y-2">
+  1188→                      <h4 className="text-sm font-medium text-muted-foreground">
+  1189→                        {categoryLabel[category]}
+  1190→                      </h4>
+  1191→                      <div className="flex flex-wrap gap-2">
+  1192→                        {categorySkills.map((skill) => (
+  1193→                          <Badge
+  1194→                            key={skill.id}
+  1195→                            variant="secondary"
+  1196→                            className="px-3 py-1.5 text-sm gap-1.5 bg-secondary/50 hover:bg-secondary/80 transition-colors"
+  1197→                          >
+  1198→                            {skill.name}
+  1199→                            <button
+  1200→                              type="button"
+  1201→                              onClick={() => skill.id && handleDeleteSkill(skill.id)}
+  1202→                              className="ml-0.5 hover:text-destructive transition-colors"
+  1203→                            >
+  1204→                              <Trash2 className="size-3" />
+  1205→                            </button>
+  1206→                          </Badge>
+  1207→                        ))}
+  1208→                      </div>
+  1209→                    </div>
+  1210→                  );
+  1211→                })}
+  1212→              </div>
+  1213→            )}
+  1214→          </div>
+  1215→        );
+  1216→
+  1217→      default:
+  1218→        return null;
+  1219→    }
+  1220→  };
+  1221→
+  1222→  // ================================================================
+  1223→  // Main Render
+  1224→  // ================================================================
+  1225→  return (
+  1226→    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
+  1227→      <div className="w-full max-w-2xl">
+  1228→        {/* Header */}
+  1229→        <div className="text-center mb-8">
+  1230→          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+  1231→            Set Up Your Profile
+  1232→          </h1>
+  1233→          <p className="text-muted-foreground text-sm sm:text-base">
+  1234→            Complete your profile to build professional resumes
+  1235→          </p>
+  1236→        </div>
+  1237→
+  1238→        {/* Progress Bar */}
+  1239→        <div className="mb-6">
+  1240→          <Progress value={progressValue} className="h-2 mb-4" />
+  1241→          <div className="flex justify-between">
+  1242→            {STEPS.map((step, index) => {
+  1243→              const Icon = step.icon;
+  1244→              const isActive = index === currentStep;
+  1245→              const isCompleted = index < currentStep;
+  1246→
+  1247→              return (
+  1248→                <button
+  1249→                  key={step.label}
+  1250→                  type="button"
+  1251→                  onClick={() => {
+  1252→                    if (isCompleted) goToStep(index);
+  1253→                  }}
+  1254→                  className={`flex flex-col items-center gap-1.5 transition-all ${
+  1255→                    isActive
+  1256→                      ? 'text-primary'
+  1257→                      : isCompleted
+  1258→                        ? 'text-primary/70 cursor-pointer'
+  1259→                        : 'text-muted-foreground'
+  1260→                  }`}
+  1261→                >
+  1262→                  <div
+  1263→                    className={`size-9 rounded-full flex items-center justify-center transition-all ${
+  1264→                      isActive
+  1265→                        ? 'bg-primary text-primary-foreground shadow-md'
+  1266→                        : isCompleted
+  1267→                          ? 'bg-primary/20 text-primary'
+  1268→                          : 'bg-secondary text-muted-foreground'
+  1269→                    }`}
+  1270→                  >
+  1271→                    {isCompleted ? (
+  1272→                      <Check className="size-4" />
+  1273→                    ) : (
+  1274→                      <Icon className="size-4" />
+  1275→                    )}
+  1276→                  </div>
+  1277→                  <span className="text-[10px] sm:text-xs font-medium hidden sm:block">
+  1278→                    {step.label}
+  1279→                  </span>
+  1280→                </button>
+  1281→              );
+  1282→            })}
+  1283→          </div>
+  1284→        </div>
+  1285→
+  1286→        {/* Step Content Card */}
+  1287→        <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+  1288→          <CardHeader className="pb-4">
+  1289→            <CardTitle className="text-lg flex items-center gap-2">
+  1290→              {(() => {
+  1291→                const StepIcon = STEPS[currentStep].icon;
+  1292→                return <StepIcon className="size-5 text-primary" />;
+  1293→              })()}
+  1294→              {STEPS[currentStep].label}
+  1295→            </CardTitle>
+  1296→          </CardHeader>
+  1297→          <CardContent>
+  1298→            <AnimatePresence mode="wait" custom={direction}>
+  1299→              <motion.div
+  1300→                key={currentStep}
+  1301→                custom={direction}
+  1302→                variants={slideVariants}
+  1303→                initial="enter"
+  1304→                animate="center"
+  1305→                exit="exit"
+  1306→                transition={{ duration: 0.3, ease: 'easeInOut' }}
+  1307→              >
+  1308→                {renderStepContent()}
+  1309→              </motion.div>
+  1310→            </AnimatePresence>
+  1311→
+  1312→            {/* Navigation Buttons */}
+  1313→            <div className="flex justify-between mt-8 pt-4 border-t border-border/50">
+  1314→              <Button
+  1315→                type="button"
+  1316→                variant="outline"
+  1317→                onClick={handleBack}
+  1318→                disabled={currentStep === 0 || saving}
+  1319→                className="gap-1.5"
+  1320→              >
+  1321→                <ChevronLeft className="size-4" />
+  1322→                Back
+  1323→              </Button>
+  1324→
+  1325→              {currentStep < STEPS.length - 1 ? (
+  1326→                <Button
+  1327→                  type="button"
+  1328→                  onClick={handleNext}
+  1329→                  disabled={saving}
+  1330→                  className="gap-1.5"
+  1331→                >
+  1332→                  {saving ? (
+  1333→                    <Loader2 className="size-4 animate-spin" />
+  1334→                  ) : null}
+  1335→                  Next
+  1336→                  <ChevronRight className="size-4" />
+  1337→                </Button>
+  1338→              ) : (
+  1339→                <Button
+  1340→                  type="button"
+  1341→                  onClick={handleComplete}
+  1342→                  disabled={saving}
+  1343→                  className="gap-1.5"
+  1344→                >
+  1345→                  {saving ? (
+  1346→                    <Loader2 className="size-4 animate-spin" />
+  1347→                  ) : (
+  1348→                    <Check className="size-4" />
+  1349→                  )}
+  1350→                  Complete &amp; Continue
+  1351→                </Button>
+  1352→              )}
+  1353→            </div>
+  1354→          </CardContent>
+  1355→        </Card>
+  1356→      </div>
+  1357→    </div>
+  1358→  );
+  1359→}
+  1360→
