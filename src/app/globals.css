@@ -121,13 +121,12 @@
   }
   html, body {
     @apply bg-background text-foreground;
-    height: 100%;
-    overflow: hidden;
   }
-  /* Fix Radix ScrollArea viewport child expanding beyond container width */
-  [data-radix-scroll-area-viewport] > div {
+  /* Fix Radix ScrollArea viewport child expanding beyond container width - only for sidebar lists */
+  aside [data-radix-scroll-area-viewport] > div,
+  [data-radix-scroll-area-viewport].sidebar-scroll > div {
     display: block !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
   }
 }
 

@@ -664,7 +664,7 @@ export default function ChatPage() {
               <Plus className="size-4" /> New Chat
             </Button>
           </div>
-          <ScrollArea className="h-[calc(100vh-300px)]">
+          <ScrollArea className="h-[calc(100vh-300px)] sidebar-scroll">
             <div className="px-3 space-y-1 overflow-hidden">
               {conversations.map((conv) => (
                 <ConversationItem
@@ -780,10 +780,13 @@ export default function ChatPage() {
                         </div>
                       )}
 
-                      {/* Show extracted info cards inline */}
+                      {/* Show extracted info cards inline - merge with pendingFields for live status */}
                       {msg.role === 'assistant' && msg.extractedInfo && Array.isArray(msg.extractedInfo) && msg.extractedInfo.length > 0 && (
                         <ExtractedInfoCard
-                          fields={msg.extractedInfo as ExtractedField[]}
+                          fields={(msg.extractedInfo as ExtractedField[]).map(f => {
+                            const liveField = pendingFields.find(pf => pf.id === f.id);
+                            return liveField || f;
+                          })}
                           onConfirm={handleConfirmField}
                           onReject={handleRejectField}
                           onEdit={handleEditField}
