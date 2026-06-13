@@ -491,7 +491,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex bg-background">
       {/* ── Sidebar (desktop) ────────────────────────────────── */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border/30 bg-card/30 shrink-0">
+      <aside className="hidden md:flex w-64 flex-col border-r border-border/30 bg-card/30 shrink-0 sticky top-0 h-screen">
         <div className="flex items-center justify-between p-3 border-b border-border/30">
           <Button variant="ghost" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={createConversation}>
             <Plus className="size-4" /> New Chat
@@ -587,7 +587,7 @@ export default function ChatPage() {
       {/* ── Main chat area ──────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Chat header */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-sm shrink-0">
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/95 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-3">
             <div className="md:hidden w-8" />
             <div className="flex items-center gap-2">

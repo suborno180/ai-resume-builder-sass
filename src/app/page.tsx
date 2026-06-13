@@ -111,10 +111,13 @@ export default function Home() {
   };
 
   const showFooter = currentRoute !== '/chat';
+  const isChatPage = currentRoute === '/chat';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {renderPage()}
+    <div className={`bg-background flex flex-col ${isChatPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <div className={isChatPage ? 'flex-1 min-h-0' : 'flex-1'}>
+        {renderPage()}
+      </div>
       {showFooter && <Footer />}
       <AuthDialog />
     </div>

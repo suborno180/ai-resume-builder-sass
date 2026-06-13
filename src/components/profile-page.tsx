@@ -28,6 +28,8 @@ import {
   X,
   FileText,
   MessageSquare,
+  Sparkles,
+  Bot,
 } from 'lucide-react';
 import type { ProfileData, ExperienceData, EducationData, SkillData } from '@/lib/types';
 
@@ -276,6 +278,28 @@ export default function ProfilePage() {
       {/* Content */}
       <main className="flex-1 mx-auto max-w-3xl w-full px-4 py-6 sm:px-6">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+          {/* AI Engineer CTA Banner */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
+              <CardContent className="p-5 relative">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-primary/15 shrink-0">
+                    <Bot className="size-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm">Need help building your resume?</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Chat with our AI Engineer to optimize your profile, target a specific job, and generate a perfect resume.</p>
+                  </div>
+                  <Button className="gap-2 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setRoute('/chat')}>
+                    <Sparkles className="size-4" />
+                    Find an AI Engineer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           {/* Personal Info */}
           <motion.div variants={itemVariants}>
             <Card className="border-border/30">
