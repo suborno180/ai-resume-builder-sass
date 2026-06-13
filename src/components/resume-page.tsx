@@ -44,6 +44,42 @@ export default function ResumePage() {
 
   return (
     <div className="min-h-screen bg-neutral-900 flex flex-col">
+      {/* Print-specific CSS */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .resume-print-area {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .resume-print-area > div {
+            break-inside: avoid;
+          }
+        }
+        @media screen {
+          .resume-print-area {
+            break-inside: avoid;
+          }
+          .resume-print-area > div > div > div {
+            break-inside: avoid;
+          }
+        }
+      ` }} />
+
       {/* Toolbar */}
       <div className="no-print sticky top-0 z-40 bg-neutral-800/90 backdrop-blur-md border-b border-neutral-700">
         <div className="flex h-12 items-center justify-between px-4 sm:px-6">
@@ -80,6 +116,10 @@ export default function ResumePage() {
               <SelectItem value="creative">Creative</SelectItem>
               <SelectItem value="executive">Executive</SelectItem>
               <SelectItem value="compact">Compact</SelectItem>
+              <SelectItem value="elegant">Elegant</SelectItem>
+              <SelectItem value="technical">Technical</SelectItem>
+              <SelectItem value="academic">Academic</SelectItem>
+              <SelectItem value="bold">Bold</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex gap-2">
@@ -113,7 +153,7 @@ export default function ResumePage() {
         >
           <div
             className="resume-print-area bg-white shadow-2xl"
-            style={{ width: '794px', minHeight: '1123px' }}
+            style={{ width: '210mm', minHeight: '297mm' }}
           >
             {renderResume(selectedTemplate, resumeData)}
           </div>

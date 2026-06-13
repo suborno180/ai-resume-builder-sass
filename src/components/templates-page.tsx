@@ -17,6 +17,10 @@ const TEMPLATES = [
   { id: 'creative', name: 'Creative', description: 'Colored accent sidebar with modern typography' },
   { id: 'executive', name: 'Executive', description: 'Bold header with strong typography' },
   { id: 'compact', name: 'Compact', description: 'Dense two-column layout for maximum content' },
+  { id: 'elegant', name: 'Elegant', description: 'Timeless sophistication with serif headings and double-line borders' },
+  { id: 'technical', name: 'Technical', description: 'Developer-focused with dark sidebar and code-style accents' },
+  { id: 'academic', name: 'Academic', description: 'Traditional academic CV with education first' },
+  { id: 'bold', name: 'Bold', description: 'Stand out with a vibrant gradient header banner' },
 ];
 
 const containerVariants = {
@@ -217,6 +221,135 @@ function CompactPreview() {
   );
 }
 
+function ElegantPreview() {
+  return (
+    <div className="bg-white text-gray-800 p-4 text-[6px] leading-[1.4] h-40 overflow-hidden font-sans">
+      <div className="border-t-2 border-gray-400 mb-0.5" />
+      <div className="border-t border-gray-300 mb-2" />
+      <div className="text-center mb-2">
+        <div className="text-[11px] font-normal text-gray-700" style={{ fontFamily: 'Georgia, serif' }}>John Doe</div>
+        <div className="text-gray-500 text-[5px] my-0.5">Software Engineer</div>
+        <div className="text-gray-400 text-[5px]">john@email.com · (555) 123-4567 · San Francisco, CA</div>
+      </div>
+      <div className="mb-1">
+        <div className="font-semibold text-[7px] text-gray-700 uppercase tracking-wider mb-0.5 border-b border-gray-200 pb-0.5 inline-block">Summary</div>
+        <div className="text-gray-600">Experienced software engineer with 5+ years of expertise in building scalable applications...</div>
+      </div>
+      <div className="mb-1">
+        <div className="font-semibold text-[7px] text-gray-700 uppercase tracking-wider mb-0.5 border-b border-gray-200 pb-0.5 inline-block">Experience</div>
+        <div className="flex justify-between"><span className="font-semibold">Senior Developer</span><span className="text-gray-400">2021–Present</span></div>
+        <div className="text-gray-500 italic text-[5px]">Company Name</div>
+        <div className="text-gray-600">• Led team of 5 developers • Implemented CI/CD pipeline</div>
+      </div>
+      <div className="border-t border-gray-300 mt-2 mb-0.5" />
+      <div className="border-t-2 border-gray-400" />
+    </div>
+  );
+}
+
+function TechnicalPreview() {
+  return (
+    <div className="bg-white text-gray-800 h-40 overflow-hidden font-mono flex">
+      <div className="bg-slate-900 text-white p-3 w-[30%] text-[5px]">
+        <div className="text-[9px] font-bold mb-1">John Doe</div>
+        <div className="text-emerald-400 text-[5px] mb-2">Software Engineer</div>
+        <div className="text-emerald-400 text-[5px] mb-1">{"// Contact"}</div>
+        <div className="text-gray-300 mb-0.5">📧 john@email.com</div>
+        <div className="text-gray-300 mb-0.5">📱 (555) 123-4567</div>
+        <div className="text-gray-300 mb-0.5">🐙 github.com/johndoe</div>
+        <div className="text-emerald-400 text-[5px] mb-1 mt-1.5">{"// Skills"}</div>
+        <div className="flex flex-wrap gap-0.5">
+          {['React', 'TypeScript', 'Node.js'].map((s) => (
+            <span key={s} className="bg-emerald-900 text-emerald-300 rounded px-1 py-px text-[4px]">{s}</span>
+          ))}
+          {['Python', 'AWS'].map((s) => (
+            <span key={s} className="bg-emerald-900 text-emerald-300 rounded px-1 py-px text-[4px]">{s}</span>
+          ))}
+        </div>
+      </div>
+      <div className="p-3 flex-1 text-[5px]">
+        <div className="text-emerald-500 text-[6px] font-bold mb-0.5 inline-block border-b border-emerald-500 pb-0.5">## Profile</div>
+        <div className="text-gray-600 mb-1.5">Experienced software engineer with 5+ years of expertise...</div>
+        <div className="text-emerald-500 text-[6px] font-bold mb-0.5 inline-block border-b border-emerald-500 pb-0.5">## Experience</div>
+        <div className="border-l-2 border-emerald-500 pl-2">
+          <div className="flex justify-between"><span className="font-semibold">Senior Developer</span><span className="text-gray-400">2021–Present</span></div>
+          <div className="text-gray-500">Company Name</div>
+          <div className="text-gray-600">• Led team of 5 developers</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AcademicPreview() {
+  return (
+    <div className="bg-white text-gray-800 p-4 text-[6px] leading-[1.3] h-40 overflow-hidden font-sans">
+      <div className="text-center mb-2">
+        <div className="text-[11px] font-normal text-black" style={{ fontFamily: 'Georgia, serif' }}>John Doe</div>
+        <div className="text-gray-600 text-[5px]">Ph.D. Candidate, Computer Science</div>
+        <div className="text-gray-500 text-[5px]">john@email.com · (555) 123-4567 · Stanford, CA</div>
+      </div>
+      <div className="mb-1">
+        <div className="font-bold text-[7px] text-black uppercase tracking-wider mb-0.5 border-b border-black pb-0.5">Research Interests</div>
+        <div className="text-gray-700">Machine learning, natural language processing, computer vision</div>
+      </div>
+      <div className="mb-1">
+        <div className="font-bold text-[7px] text-black uppercase tracking-wider mb-0.5 border-b border-black pb-0.5">Education</div>
+        <div className="flex justify-between"><span className="font-semibold">Ph.D. in Computer Science</span><span className="text-gray-500">2019–Present</span></div>
+        <div className="text-gray-600">Stanford University</div>
+        <div className="flex justify-between"><span className="font-semibold">B.S. in Computer Science</span><span className="text-gray-500">2015–2019</span></div>
+        <div className="text-gray-600">MIT</div>
+      </div>
+      <div className="mb-1">
+        <div className="font-bold text-[7px] text-black uppercase tracking-wider mb-0.5 border-b border-black pb-0.5">Experience</div>
+        <div className="flex justify-between"><span className="font-semibold">Research Assistant</span><span className="text-gray-500">2020–Present</span></div>
+        <div className="text-gray-600 italic">Stanford AI Lab</div>
+      </div>
+    </div>
+  );
+}
+
+function BoldPreview() {
+  return (
+    <div className="bg-white text-gray-800 text-[6px] leading-[1.4] h-40 overflow-hidden font-sans">
+      <div className="bg-gradient-to-r from-emerald-500 to-amber-500 text-white p-3 -mx-4 -mt-4 mb-2">
+        <div className="text-[14px] font-extrabold tracking-tight">John Doe</div>
+        <div className="text-white/80 text-[6px]">Software Engineer</div>
+      </div>
+      <div className="px-4 flex gap-3">
+        <div className="flex-[65]">
+          <div className="border-l-2 border-emerald-500 pl-1.5 mb-1.5">
+            <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider">Experience</div>
+          </div>
+          <div className="pl-1.5">
+            <div className="flex justify-between"><span className="font-semibold">Senior Developer</span><span className="text-gray-400">2021–Present</span></div>
+            <div className="text-gray-500">Company Name</div>
+            <div className="text-gray-600">• Led team of 5 • Built APIs serving 1M+ users</div>
+          </div>
+          <div className="border-l-2 border-amber-500 pl-1.5 mt-1.5 mb-1">
+            <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider">Education</div>
+          </div>
+          <div className="pl-1.5 text-gray-600">B.S. Computer Science — Stanford University</div>
+        </div>
+        <div className="flex-[35]">
+          <div className="border-l-2 border-emerald-500 pl-1.5 mb-1">
+            <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider">Contact</div>
+          </div>
+          <div className="pl-1.5 text-gray-500 mb-1.5">📧 john@email.com📱 (555) 123-4567</div>
+          <div className="border-l-2 border-amber-500 pl-1.5 mb-1">
+            <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider">Skills</div>
+          </div>
+          <div className="pl-1.5 flex flex-wrap gap-0.5">
+            {['React', 'TypeScript', 'Node.js', 'Python', 'AWS'].map((s) => (
+              <span key={s} className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-1 py-px text-[4px]">{s}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PREVIEW_MAP: Record<string, React.ComponentType> = {
   minimal: MinimalPreview,
   modern: ModernPreview,
@@ -224,6 +357,10 @@ const PREVIEW_MAP: Record<string, React.ComponentType> = {
   creative: CreativePreview,
   executive: ExecutivePreview,
   compact: CompactPreview,
+  elegant: ElegantPreview,
+  technical: TechnicalPreview,
+  academic: AcademicPreview,
+  bold: BoldPreview,
 };
 
 export default function TemplatesPage() {

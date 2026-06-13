@@ -25,6 +25,7 @@ export interface ProfileData {
   github?: string;
   summary?: string;
   hobbies?: string;
+  image?: string;
 }
 
 /** Work experience entry */

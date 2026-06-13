@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
 import {
@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Sparkles,
   Bot,
+  Camera,
 } from 'lucide-react';
 import type { ProfileData, ExperienceData, EducationData, SkillData } from '@/lib/types';
 
@@ -64,6 +65,7 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   // Local edit state for profile
   const [editProfile, setEditProfile] = useState<ProfileData>({});
@@ -71,6 +73,9 @@ export default function ProfilePage() {
   // New entry states
   const [newSkill, setNewSkill] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState<SkillData['category']>('technical');
+
+  // File input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch profile
   const fetchProfile = useCallback(async () => {
@@ -92,6 +97,7 @@ export default function ProfilePage() {
           github: p.github ?? '',
           summary: p.summary ?? '',
           hobbies: p.hobbies ?? '',
+          image: p.image ?? '',
         };
         setProfile(profileData);
         setEditProfile(profileData);
@@ -161,6 +167,69 @@ export default function ProfilePage() {
       toast.error('Network error');
     } finally {
       setSaving(false);
+    }
+  }, [editProfile, setProfile]);
+
+  // Handle image upload
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side validation
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Allowed: JPG, PNG, GIF, WebP');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large. Max size: 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/profile/image', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newImageUrl = data.imageUrl as string;
+        setEditProfile((prev) => ({ ...prev, image: newImageUrl }));
+        setProfile({ ...editProfile, image: newImageUrl });
+        toast.success('Profile photo updated!');
+      } else {
+        const data = await res.json();
+        toast.error((data as { error?: string }).error || 'Failed to upload image');
+      }
+    } catch {
+      toast.error('Network error');
+    } finally {
+      setUploading(false);
+      // Reset file input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [editProfile, setProfile]);
+
+  // Handle image delete
+  const handleImageDelete = useCallback(async () => {
+    try {
+      const res = await fetch('/api/profile/image', {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setEditProfile((prev) => ({ ...prev, image: '' }));
+        setProfile({ ...editProfile, image: '' });
+        toast.success('Profile photo removed');
+      } else {
+        toast.error('Failed to remove photo');
+      }
+    } catch {
+      toast.error('Network error');
     }
   }, [editProfile, setProfile]);
 
@@ -244,6 +313,7 @@ export default function ProfilePage() {
   }
 
   const displayName = [editProfile.firstName, editProfile.lastName].filter(Boolean).join(' ') || session?.user?.name || 'User';
+  const initials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -311,6 +381,86 @@ export default function ProfilePage() {
                 <CardDescription>Your basic contact details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Profile Image Section */}
+                <div className="flex items-center gap-4">
+                  <div className="relative group">
+                    <div
+                      className="relative size-20 rounded-full overflow-hidden border-2 border-border cursor-pointer"
+                      onClick={() => !uploading && fileInputRef.current?.click()}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Change profile photo"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (!uploading) fileInputRef.current?.click();
+                        }
+                      }}
+                    >
+                      {editProfile.image ? (
+                        <img
+                          src={editProfile.image}
+                          alt="Profile photo"
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-muted">
+                          <User className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      {/* Hover overlay */}
+                      {!uploading && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera className="size-5 text-white" />
+                        </div>
+                      )}
+                      {/* Loading overlay */}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="size-5 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Delete button */}
+                    {editProfile.image && !uploading && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-1 -right-1 size-6 rounded-full shadow-md"
+                        onClick={handleImageDelete}
+                        aria-label="Remove profile photo"
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{displayName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {editProfile.jobTitle || 'Add your job title'}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-xs mt-1.5 px-0 hover:bg-transparent text-primary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Camera className="size-3" />
+                      {editProfile.image ? 'Change photo' : 'Upload photo'}
+                    </Button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-xs">First Name</Label>
@@ -419,7 +569,7 @@ export default function ProfilePage() {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="size-5 text-primary" />
+                    <GraduationCap className="size-5 text-primary"/>
                     <CardTitle className="text-base">Education</CardTitle>
                     <Badge variant="secondary" className="text-[10px]">{education.length}</Badge>
                   </div>

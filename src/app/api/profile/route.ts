@@ -61,6 +61,7 @@ export async function PUT(request: NextRequest) {
       github,
       summary,
       hobbies,
+      image,
     } = body
 
     const profile = await db.profile.upsert({
@@ -77,6 +78,7 @@ export async function PUT(request: NextRequest) {
         ...(github !== undefined && { github }),
         ...(summary !== undefined && { summary }),
         ...(hobbies !== undefined && { hobbies }),
+        ...(image !== undefined && { image }),
       },
       create: {
         userId: session.user.id,
@@ -91,6 +93,7 @@ export async function PUT(request: NextRequest) {
         github,
         summary,
         hobbies,
+        image,
       },
     })
 
