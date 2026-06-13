@@ -1,19 +1,27 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
-import Landing from '@/components/landing';
-import Dashboard from '@/components/dashboard';
-import AIChat from '@/components/ai-chat';
-import SmartForm from '@/components/smart-form';
-import AIPolish from '@/components/ai-polish';
-import TemplateGallery from '@/components/template-gallery';
-import ResumePreview from '@/components/resume-preview';
-import AuthDialog from '@/components/auth-dialog';
 import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
 import { Loader2, FileText } from 'lucide-react';
+import type { AppRoute } from '@/lib/types';
+import Landing from '@/components/landing';
+import Dashboard from '@/components/dashboard-page';
+import ChatPage from '@/components/chat-page';
+import ProfilePage from '@/components/profile-page';
+import TemplatesPage from '@/components/templates-page';
+import ResumePage from '@/components/resume-page';
+import AuthDialog from '@/components/auth-dialog';
 
-// ── Footer shared across views ──────────────────────────────
+// ── Parse hash route ─────────────────────────────────────────
+function getHashRoute(): AppRoute {
+  if (typeof window === 'undefined') return '/';
+  const hash = window.location.hash.replace('#', '') || '/';
+  const validRoutes: AppRoute[] = ['/', '/dashboard', '/chat', '/profile', '/templates', '/resume'];
+  return validRoutes.includes(hash as AppRoute) ? (hash as AppRoute) : '/';
+}
+
+// ── Footer ───────────────────────────────────────────────────
 function Footer() {
   return (
     <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm mt-auto">
@@ -21,9 +29,7 @@ function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <FileText className="size-4 text-primary" />
-            <span>
-              Resu<span className="text-primary">Me</span> AI
-            </span>
+            <span>Resu<span className="text-primary">Me</span> AI</span>
             <span className="mx-1">&middot;</span>
             <span>&copy; {new Date().getFullYear()}</span>
           </div>
@@ -36,20 +42,46 @@ function Footer() {
   );
 }
 
-// ── Main Page Router ────────────────────────────────────────
+// ── Main Page Router ─────────────────────────────────────────
 export default function Home() {
-  const { currentView, setView } = useAppStore();
+  const { currentRoute, setRoute } = useAppStore();
   const { status } = useSession();
+  const initializedRef = useRef(false);
 
-  // Auto-navigate when session changes
+  // Initialize route from hash on mount
   useEffect(() => {
-    if (status === 'authenticated' && currentView === 'landing') {
-      setView('dashboard');
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const initialRoute = getHashRoute();
+    useAppStore.setState({ currentRoute: initialRoute });
+
+    const handleHashChange = () => {
+      const route = getHashRoute();
+      useAppStore.setState({ currentRoute: route });
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Handle auth-based redirects - but respect the current hash route
+  useEffect(() => {
+    if (status === 'authenticated') {
+      // Only redirect from landing to dashboard if user is on landing
+      const hashRoute = getHashRoute();
+      if (hashRoute === '/' && currentRoute === '/') {
+        setRoute('/dashboard');
+      }
     }
-    if (status === 'unauthenticated' && currentView !== 'landing') {
-      setView('landing');
+    if (status === 'unauthenticated') {
+      // Only redirect to landing if user is on a protected page
+      const protectedRoutes: AppRoute[] = ['/dashboard', '/chat', '/profile', '/templates', '/resume'];
+      if (protectedRoutes.includes(currentRoute)) {
+        setRoute('/');
+      }
     }
-  }, [status, currentView, setView]);
+  }, [status, currentRoute, setRoute]);
 
   // Show loading while session is being checked
   if (status === 'loading') {
@@ -66,31 +98,25 @@ export default function Home() {
     );
   }
 
-  // Route based on currentView
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'ai-chat':
-        return <AIChat />;
-      case 'smart-form':
-        return <SmartForm />;
-      case 'ai-polish':
-        return <AIPolish />;
-      case 'templates':
-        return <TemplateGallery />;
-      case 'preview':
-        return <ResumePreview />;
-      case 'landing':
-      default:
-        return <Landing />;
+  const renderPage = () => {
+    switch (currentRoute) {
+      case '/dashboard': return <Dashboard />;
+      case '/chat': return <ChatPage />;
+      case '/profile': return <ProfilePage />;
+      case '/templates': return <TemplatesPage />;
+      case '/resume': return <ResumePage />;
+      case '/':
+      default: return <Landing />;
     }
   };
 
+  const showFooter = currentRoute !== '/chat';
+
   return (
-    <>
-      {renderView()}
+    <div className="min-h-screen bg-background flex flex-col">
+      {renderPage()}
+      {showFooter && <Footer />}
       <AuthDialog />
-    </>
+    </div>
   );
 }

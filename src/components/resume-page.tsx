@@ -12,10 +12,10 @@ import {
 } from '@/components/ui/select';
 import { renderResume } from '@/components/resume-templates';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Printer, FileText, LayoutDashboard } from 'lucide-react';
 import type { ResumeRenderData } from '@/components/resume-templates';
 
-export default function ResumePreview() {
+export default function ResumePage() {
   const {
     profile,
     experiences,
@@ -23,7 +23,7 @@ export default function ResumePreview() {
     skills,
     selectedTemplate,
     setSelectedTemplate,
-    setView,
+    setRoute,
   } = useAppStore();
 
   const resumeData: ResumeRenderData = {
@@ -47,16 +47,28 @@ export default function ResumePreview() {
       {/* Toolbar */}
       <div className="no-print sticky top-0 z-40 bg-neutral-800/90 backdrop-blur-md border-b border-neutral-700">
         <div className="flex h-12 items-center justify-between px-4 sm:px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-neutral-300 hover:text-white hover:bg-neutral-700"
-            onClick={() => setView('templates')}
-          >
-            <ArrowLeft className="size-4" />
-            <span className="hidden sm:inline">Back to Templates</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-neutral-300 hover:text-white hover:bg-neutral-700"
+              onClick={() => setRoute('/templates')}
+            >
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Back to Templates</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <div className="hidden sm:block h-4 w-px bg-neutral-700" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-neutral-300 hover:text-white hover:bg-neutral-700 hidden sm:flex"
+              onClick={() => setRoute('/dashboard')}
+            >
+              <LayoutDashboard className="size-4" />
+              Dashboard
+            </Button>
+          </div>
           <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
             <SelectTrigger className="w-[140px] h-8 text-xs bg-neutral-700 border-neutral-600 text-neutral-200">
               <SelectValue />
@@ -93,7 +105,7 @@ export default function ResumePreview() {
       </div>
 
       {/* Resume Document */}
-      <div className="flex-1 flex flex-col items-center justify-start p-6 overflow-auto">
+      <div className="flex-1 flex flex-col items-center justify-start p-4 sm:p-6 overflow-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}

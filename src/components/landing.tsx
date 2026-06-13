@@ -8,7 +8,6 @@ import {
   FileText,
   Pencil,
   ArrowRight,
-  FileText as FileTextIcon,
   Zap,
   Users,
   ChevronRight,
@@ -43,23 +42,23 @@ const scaleIn = {
 const features = [
   {
     icon: MessageSquare,
-    title: 'AI Understands Your Job',
+    title: 'Chat with AI',
     description:
-      'Describe the job you want, and AI creates the perfect resume structure tailored to your target role.',
+      'Describe your target job and background. AI extracts your info and asks for confirmation before saving anything.',
     gradient: 'from-emerald-500/20 to-emerald-600/5',
   },
   {
     icon: FileText,
-    title: 'Smart Form Generation',
+    title: 'Confirm Before Save',
     description:
-      'AI shows only the fields that matter for your target role — no more guessing what to include.',
+      'AI never auto-saves. You review, edit, or reject every piece of extracted information. Full control is yours.',
     gradient: 'from-sky-500/20 to-sky-600/5',
   },
   {
     icon: Pencil,
-    title: 'AI-Polished Content',
+    title: 'Professional Templates',
     description:
-      'AI reads your info and writes compelling, job-specific content that gets you noticed.',
+      'Choose from 6 beautiful resume templates. AI helps tailor your content for each job application.',
     gradient: 'from-amber-500/20 to-amber-600/5',
   },
 ];
@@ -78,13 +77,13 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
 
 // ── Component ────────────────────────────────────────────────
 export default function Landing() {
-  const { setAuthDialog, setView } = useAppStore();
+  const { setAuthDialog, setRoute } = useAppStore();
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleGetStarted = () => {
     if (session) {
-      setView('dashboard');
+      setRoute('/dashboard');
     } else {
       setAuthDialog(true, 'signup');
     }
@@ -92,7 +91,7 @@ export default function Landing() {
 
   const handleSignIn = () => {
     if (session) {
-      setView('dashboard');
+      setRoute('/dashboard');
     } else {
       setAuthDialog(true, 'login');
     }
@@ -106,7 +105,7 @@ export default function Landing() {
           {/* Logo */}
           <div className="flex items-center gap-2.5">
             <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
-              <FileTextIcon className="size-5 text-primary" />
+              <FileText className="size-5 text-primary" />
             </div>
             <span className="text-lg font-semibold tracking-tight">
               ResuMe<span className="text-primary">AI</span>
@@ -208,8 +207,7 @@ export default function Landing() {
               variants={fadeUp}
               className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             >
-              Tell AI about your dream job, and we&apos;ll craft a tailored resume
-              that gets you hired — no design skills needed.
+              Chat with AI, confirm your details, and get a tailored resume — you review everything before it&apos;s saved.
             </motion.p>
 
             <motion.div
@@ -265,7 +263,7 @@ export default function Landing() {
                 How it works
               </h2>
               <p className="mt-2 text-muted-foreground max-w-lg mx-auto">
-                Three simple steps to your perfect resume
+                Chat, confirm, create — your perfect resume in three steps
               </p>
             </motion.div>
 
@@ -387,25 +385,6 @@ export default function Landing() {
           </motion.div>
         </section>
       </main>
-
-      {/* ── Footer ──────────────────────────────────────────── */}
-      <footer className="mt-auto border-t border-border/30 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileTextIcon className="size-4 text-primary" />
-              <span>
-                Resu<span className="text-primary">Me</span> AI
-              </span>
-              <span className="mx-1">&middot;</span>
-              <span>&copy; {new Date().getFullYear()}</span>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>AI-Powered Resume Builder</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -9,44 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, FileText, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
 
-// ── Template definitions with CSS preview configs ───────────
+// ── Template definitions ──────────────────────────────────────
 const TEMPLATES = [
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Clean single-column layout with simple lines',
-    previewStyle: 'single-col' as const,
-  },
-  {
-    id: 'modern',
-    name: 'Modern',
-    description: 'Two-column layout with dark sidebar for skills/contact',
-    previewStyle: 'two-col-dark' as const,
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Traditional format with centered header and horizontal rules',
-    previewStyle: 'centered' as const,
-  },
-  {
-    id: 'creative',
-    name: 'Creative',
-    description: 'Colored accent sidebar with modern typography',
-    previewStyle: 'accent-sidebar' as const,
-  },
-  {
-    id: 'executive',
-    name: 'Executive',
-    description: 'Bold header with strong typography',
-    previewStyle: 'bold-header' as const,
-  },
-  {
-    id: 'compact',
-    name: 'Compact',
-    description: 'Dense two-column layout for maximum content',
-    previewStyle: 'dense-two-col' as const,
-  },
+  { id: 'minimal', name: 'Minimal', description: 'Clean single-column layout with simple lines' },
+  { id: 'modern', name: 'Modern', description: 'Two-column layout with dark sidebar for skills/contact' },
+  { id: 'professional', name: 'Professional', description: 'Traditional format with centered header and horizontal rules' },
+  { id: 'creative', name: 'Creative', description: 'Colored accent sidebar with modern typography' },
+  { id: 'executive', name: 'Executive', description: 'Bold header with strong typography' },
+  { id: 'compact', name: 'Compact', description: 'Dense two-column layout for maximum content' },
 ];
 
 const containerVariants = {
@@ -59,7 +29,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
 };
 
-// ── CSS-based Template Preview Components ───────────────────
+// ── CSS-based Template Preview Components ─────────────────────
 function MinimalPreview() {
   return (
     <div className="bg-white text-gray-800 p-4 text-[6px] leading-[1.4] h-40 overflow-hidden font-sans">
@@ -137,12 +107,12 @@ function ProfessionalPreview() {
       </div>
       <div className="mb-1">
         <div className="text-center font-bold text-[7px] text-gray-700 uppercase tracking-wider mb-0.5 border-b border-gray-300 pb-0.5">Professional Summary</div>
-        <div className="text-gray-600 text-center">Experienced software engineer with 5+ years of expertise in building scalable applications and leading development teams.</div>
+        <div className="text-gray-600 text-center">Experienced software engineer with 5+ years of expertise in building scalable applications.</div>
       </div>
       <div>
         <div className="text-center font-bold text-[7px] text-gray-700 uppercase tracking-wider mb-0.5 border-b border-gray-300 pb-0.5">Professional Experience</div>
         <div className="text-center"><span className="font-semibold">Senior Developer</span> · Company Name · 2021–Present</div>
-        <div className="text-gray-600 text-center">• Led team of 5 developers • Implemented CI/CD pipeline • Improved performance by 40%</div>
+        <div className="text-gray-600 text-center">• Led team of 5 developers • Improved performance by 40%</div>
       </div>
     </div>
   );
@@ -197,7 +167,7 @@ function ExecutivePreview() {
       <div className="px-4">
         <div className="mb-1.5">
           <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider border-b-2 border-gray-800 pb-0.5 mb-0.5">Executive Summary</div>
-          <div className="text-gray-600">Seasoned technology executive with 15+ years of leadership experience in scaling engineering organizations from startup to enterprise.</div>
+          <div className="text-gray-600">Seasoned technology executive with 15+ years of leadership experience.</div>
         </div>
         <div>
           <div className="font-bold text-[7px] text-gray-800 uppercase tracking-wider border-b-2 border-gray-800 pb-0.5 mb-0.5">Professional Experience</div>
@@ -231,8 +201,6 @@ function CompactPreview() {
           <div className="font-bold text-[6px] text-gray-700 uppercase mb-0.5">Experience</div>
           <div className="mb-0.5"><span className="font-semibold">Sr. Developer</span> — Company · 2021–Present</div>
           <div className="text-gray-500">• Led team of 5 • Built APIs serving 1M+ users</div>
-          <div className="mt-0.5"><span className="font-semibold">Developer</span> — Startup · 2018–2021</div>
-          <div className="text-gray-500">• Developed core product features • Optimized performance</div>
         </div>
         <div className="w-[30%]">
           <div className="font-bold text-[6px] text-gray-700 uppercase mb-0.5">Skills</div>
@@ -258,12 +226,9 @@ const PREVIEW_MAP: Record<string, React.ComponentType> = {
   compact: CompactPreview,
 };
 
-export default function TemplateGallery() {
-  const { selectedTemplate, setSelectedTemplate, setView, polishedContent, targetJobTitle } = useAppStore();
+export default function TemplatesPage() {
+  const { selectedTemplate, setSelectedTemplate, setRoute, profile, experiences, education, skills, setCurrentResume } = useAppStore();
   const [creating, setCreating] = useState(false);
-
-  // AI-recommended template
-  const aiRecommended = polishedContent?.suggestedTemplate || null;
 
   const handleSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -272,46 +237,37 @@ export default function TemplateGallery() {
   const handleContinue = async () => {
     setCreating(true);
     try {
-      // Create or update resume in the API
       const res = await fetch('/api/resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: `My ${TEMPLATES.find((t) => t.id === selectedTemplate)?.name || ''} Resume${targetJobTitle ? ` — ${targetJobTitle}` : ''}`,
+          title: `My ${TEMPLATES.find((t) => t.id === selectedTemplate)?.name || ''} Resume`,
           templateId: selectedTemplate,
-          targetJobTitle,
-          targetJobDescription: useAppStore.getState().targetJobDescription,
         }),
       });
       if (res.ok) {
         const data = await res.json();
-        useAppStore.getState().setCurrentResume(data.resume);
+        setCurrentResume(data.resume);
         toast.success('Resume created!');
-        setView('preview');
+        setRoute('/resume');
       } else {
         toast.error('Failed to create resume');
-        // Still navigate to preview
-        setView('preview');
+        setRoute('/resume');
       }
     } catch {
       toast.error('Something went wrong');
-      setView('preview');
+      setRoute('/resume');
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-muted-foreground hover:text-foreground"
-              onClick={() => setView('ai-polish')}
-            >
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setRoute('/dashboard')}>
               <ArrowLeft className="size-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
@@ -319,16 +275,10 @@ export default function TemplateGallery() {
               <div className="flex size-7 items-center justify-center rounded-md bg-primary/10">
                 <FileText className="size-4 text-primary" />
               </div>
-              <h1 className="text-base font-semibold tracking-tight">
-                Choose Your Template
-              </h1>
+              <h1 className="text-base font-semibold tracking-tight">Choose Template</h1>
             </div>
           </div>
-          <Button
-            onClick={handleContinue}
-            disabled={creating}
-            className="gap-2"
-          >
+          <Button onClick={handleContinue} disabled={creating} className="gap-2">
             {creating ? <Loader2 className="size-4 animate-spin" /> : null}
             {creating ? 'Creating...' : 'Preview Resume'}
             {!creating && <ChevronRight className="size-4" />}
@@ -338,7 +288,7 @@ export default function TemplateGallery() {
 
       <main className="flex-1 mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <p className="text-sm text-muted-foreground mb-6">
-          Select a template for your resume. {aiRecommended && <span className="text-primary">AI has a recommendation for you!</span>}
+          Select a template for your resume. Click to select, then preview.
         </p>
         <motion.div
           variants={containerVariants}
@@ -348,7 +298,6 @@ export default function TemplateGallery() {
         >
           {TEMPLATES.map((t) => {
             const isSelected = selectedTemplate === t.id;
-            const isAIRecommended = aiRecommended === t.id;
             const PreviewComponent = PREVIEW_MAP[t.id];
 
             return (
@@ -369,36 +318,23 @@ export default function TemplateGallery() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{t.name}</CardTitle>
-                      <div className="flex items-center gap-1.5">
-                        {isAIRecommended && (
-                          <Badge className="gap-1 bg-primary/15 text-primary border-primary/20 text-[10px] px-2 py-0.5">
-                            <Sparkles className="size-3" />
-                            AI Pick
-                          </Badge>
-                        )}
-                        {isSelected && (
-                          <Badge className="gap-1 text-[10px] px-2 py-0.5">
-                            <Check className="size-3" />
-                            Selected
-                          </Badge>
-                        )}
-                      </div>
+                      {isSelected && (
+                        <Badge className="gap-1 text-[10px] px-2 py-0.5">
+                          <Check className="size-3" />
+                          Selected
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {/* CSS Visual Preview */}
                     <div className="rounded-md overflow-hidden border border-gray-200 shadow-sm">
                       {PreviewComponent && <PreviewComponent />}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {t.description}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t.description}</p>
                     <Button
                       size="sm"
                       className={`w-full gap-1.5 ${
-                        isSelected
-                          ? ''
-                          : 'bg-primary/10 text-primary hover:bg-primary/20'
+                        isSelected ? '' : 'bg-primary/10 text-primary hover:bg-primary/20'
                       }`}
                       variant={isSelected ? 'default' : 'outline'}
                       onClick={(e) => {
@@ -407,10 +343,7 @@ export default function TemplateGallery() {
                       }}
                     >
                       {isSelected ? (
-                        <>
-                          <Check className="size-3.5" />
-                          Selected
-                        </>
+                        <><Check className="size-3.5" /> Selected</>
                       ) : (
                         'Use Template'
                       )}
@@ -422,20 +355,6 @@ export default function TemplateGallery() {
           })}
         </motion.div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/30 mt-auto">
-        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <FileText className="size-3.5 text-primary" />
-            <span>
-              Resu<span className="text-primary">Me</span> AI
-            </span>
-            <span>&middot;</span>
-            <span>AI-Powered Resume Builder</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

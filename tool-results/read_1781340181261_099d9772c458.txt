@@ -1,0 +1,700 @@
+     1→'use client';
+     2→
+     3→import { useEffect, useState, useCallback, useMemo } from 'react';
+     4→import { useAppStore } from '@/lib/store';
+     5→import { useSession, signOut } from 'next-auth/react';
+     6→import { toast } from 'sonner';
+     7→import {
+     8→  Card,
+     9→  CardContent,
+    10→  CardHeader,
+    11→  CardTitle,
+    12→  CardDescription,
+    13→} from '@/components/ui/card';
+    14→import { Button } from '@/components/ui/button';
+    15→import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+    16→import {
+    17→  DropdownMenu,
+    18→  DropdownMenuContent,
+    19→  DropdownMenuItem,
+    20→  DropdownMenuSeparator,
+    21→  DropdownMenuTrigger,
+    22→} from '@/components/ui/dropdown-menu';
+    23→import {
+    24→  AlertDialog,
+    25→  AlertDialogAction,
+    26→  AlertDialogCancel,
+    27→  AlertDialogContent,
+    28→  AlertDialogDescription,
+    29→  AlertDialogFooter,
+    30→  AlertDialogHeader,
+    31→  AlertDialogTitle,
+    32→} from '@/components/ui/alert-dialog';
+    33→import { Badge } from '@/components/ui/badge';
+    34→import { Progress } from '@/components/ui/progress';
+    35→import { motion } from 'framer-motion';
+    36→import {
+    37→  Plus,
+    38→  User,
+    39→  FileText,
+    40→  Trash2,
+    41→  LogOut,
+    42→  Loader2,
+    43→  FolderOpen,
+    44→  Sparkles,
+    45→  MessageSquare,
+    46→  LayoutDashboard,
+    47→  BarChart3,
+    48→  CheckCircle2,
+    49→  Eye,
+    50→  Clock,
+    51→} from 'lucide-react';
+    52→import type { ResumeData } from '@/lib/types';
+    53→
+    54→// ── Animation variants ──────────────────────────────────────
+    55→const containerVariants = {
+    56→  hidden: { opacity: 0 },
+    57→  visible: {
+    58→    opacity: 1,
+    59→    transition: { staggerChildren: 0.06 },
+    60→  },
+    61→};
+    62→
+    63→const itemVariants = {
+    64→  hidden: { opacity: 0, y: 20 },
+    65→  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+    66→};
+    67→
+    68→const cardHover = {
+    69→  rest: { scale: 1, boxShadow: '0 0 0 rgba(0,0,0,0)' },
+    70→  hover: {
+    71→    scale: 1.02,
+    72→    boxShadow: '0 8px 30px rgba(16,185,129,0.12)',
+    73→    transition: { duration: 0.25, ease: 'easeOut' },
+    74→  },
+    75→};
+    76→
+    77→// ── Template display names ───────────────────────────────────
+    78→const templateNames: Record<string, string> = {
+    79→  minimal: 'Minimal',
+    80→  modern: 'Modern',
+    81→  creative: 'Creative',
+    82→  professional: 'Professional',
+    83→  executive: 'Executive',
+    84→  compact: 'Compact',
+    85→};
+    86→
+    87→// ── Template badge colors ────────────────────────────────────
+    88→const templateColors: Record<string, string> = {
+    89→  minimal: 'bg-zinc-500/15 text-zinc-400',
+    90→  modern: 'bg-primary/15 text-primary',
+    91→  creative: 'bg-amber-500/15 text-amber-400',
+    92→  professional: 'bg-sky-500/15 text-sky-400',
+    93→  executive: 'bg-rose-500/15 text-rose-400',
+    94→  compact: 'bg-violet-500/15 text-violet-400',
+    95→};
+    96→
+    97→// ── Component ────────────────────────────────────────────────
+    98→export default function Dashboard() {
+    99→  const { data: session } = useSession();
+   100→  const {
+   101→    profile,
+   102→    setProfile,
+   103→    setExperiences,
+   104→    setEducation,
+   105→    setSkills,
+   106→    resumes,
+   107→    setResumes,
+   108→    setCurrentResume,
+   109→    setView,
+   110→    clearChat,
+   111→    setJobAnalysis,
+   112→    setTargetJobDescription,
+   113→    setTargetJobTitle,
+   114→    setPolishedContent,
+   115→    setSelectedTemplate,
+   116→  } = useAppStore();
+   117→
+   118→  const [loading, setLoading] = useState(true);
+   119→  const [deleteTarget, setDeleteTarget] = useState<ResumeData | null>(null);
+   120→  const [deleting, setDeleting] = useState(false);
+   121→
+   122→  // ── Fetch profile ─────────────────────────────────────────
+   123→  const fetchProfile = useCallback(async () => {
+   124→    try {
+   125→      const res = await fetch('/api/profile');
+   126→      if (res.ok) {
+   127→        const data = await res.json();
+   128→        const p = data.profile;
+   129→        setProfile({
+   130→          id: p.id,
+   131→          firstName: p.firstName ?? '',
+   132→          lastName: p.lastName ?? '',
+   133→          jobTitle: p.jobTitle ?? '',
+   134→          email: p.email ?? '',
+   135→          phone: p.phone ?? '',
+   136→          location: p.location ?? '',
+   137→          website: p.website ?? '',
+   138→          linkedin: p.linkedin ?? '',
+   139→          github: p.github ?? '',
+   140→          summary: p.summary ?? '',
+   141→        });
+   142→        setExperiences(p.experiences || []);
+   143→        setEducation(p.education || []);
+   144→        setSkills(p.skills || []);
+   145→      }
+   146→    } catch {
+   147→      // silently ignore
+   148→    }
+   149→  }, [setProfile, setExperiences, setEducation, setSkills]);
+   150→
+   151→  // ── Fetch resumes ─────────────────────────────────────────
+   152→  const fetchResumes = useCallback(async () => {
+   153→    try {
+   154→      const res = await fetch('/api/resume');
+   155→      if (res.ok) {
+   156→        const data = await res.json();
+   157→        setResumes(data.resumes || []);
+   158→      }
+   159→    } catch {
+   160→      // silently ignore
+   161→    }
+   162→  }, [setResumes]);
+   163→
+   164→  // ── Initial data fetch ────────────────────────────────────
+   165→  useEffect(() => {
+   166→    const load = async () => {
+   167→      setLoading(true);
+   168→      await Promise.all([fetchProfile(), fetchResumes()]);
+   169→      setLoading(false);
+   170→    };
+   171→    load();
+   172→  }, [fetchProfile, fetchResumes]);
+   173→
+   174→  // ── Delete resume ─────────────────────────────────────────
+   175→  const handleDelete = async () => {
+   176→    if (!deleteTarget?.id) return;
+   177→    setDeleting(true);
+   178→    try {
+   179→      const res = await fetch('/api/resume', {
+   180→        method: 'DELETE',
+   181→        headers: { 'Content-Type': 'application/json' },
+   182→        body: JSON.stringify({ id: deleteTarget.id }),
+   183→      });
+   184→      if (res.ok) {
+   185→        toast.success('Resume deleted');
+   186→        setResumes(resumes.filter((r) => r.id !== deleteTarget.id));
+   187→      } else {
+   188→        toast.error('Failed to delete resume');
+   189→      }
+   190→    } catch {
+   191→      toast.error('Something went wrong');
+   192→    } finally {
+   193→      setDeleting(false);
+   194→      setDeleteTarget(null);
+   195→    }
+   196→  };
+   197→
+   198→  // ── Navigation helpers ────────────────────────────────────
+   199→  const handleCreateResume = () => {
+   200→    clearChat();
+   201→    setJobAnalysis(null);
+   202→    setTargetJobDescription('');
+   203→    setTargetJobTitle('');
+   204→    setPolishedContent(null);
+   205→    setSelectedTemplate('modern');
+   206→    setView('ai-chat');
+   207→  };
+   208→
+   209→  const handleEditResume = (resume: ResumeData) => {
+   210→    setCurrentResume(resume);
+   211→    setSelectedTemplate(resume.templateId || 'modern');
+   212→    setView('preview');
+   213→  };
+   214→
+   215→  // ── Derive user display name ──────────────────────────────
+   216→  const userName =
+   217→    profile?.firstName || profile?.lastName
+   218→      ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim()
+   219→      : (session?.user?.name || session?.user?.email?.split('@')[0]) ?? 'there';
+   220→
+   221→  const userInitials = userName
+   222→    .split(' ')
+   223→    .map((n) => n[0])
+   224→    .join('')
+   225→    .toUpperCase()
+   226→    .slice(0, 2);
+   227→
+   228→  // ── Profile completion ────────────────────────────────────
+   229→  const profileCompletion = useMemo(() => {
+   230→    if (!profile) return 0;
+   231→    const fields = [
+   232→      profile.firstName,
+   233→      profile.lastName,
+   234→      profile.jobTitle,
+   235→      profile.email,
+   236→      profile.phone,
+   237→      profile.location,
+   238→      profile.summary,
+   239→    ];
+   240→    const filled = fields.filter((f) => f && f.trim().length > 0).length;
+   241→    return Math.round((filled / fields.length) * 100);
+   242→  }, [profile]);
+   243→
+   244→  // ── Format date ───────────────────────────────────────────
+   245→  const formatDate = (dateStr?: string) => {
+   246→    if (!dateStr) return '—';
+   247→    const d = new Date(dateStr);
+   248→    return d.toLocaleDateString('en-US', {
+   249→      month: 'short',
+   250→      day: 'numeric',
+   251→      year: 'numeric',
+   252→    });
+   253→  };
+   254→
+   255→  // ── Loading state ─────────────────────────────────────────
+   256→  if (loading) {
+   257→    return (
+   258→      <div className="flex min-h-screen items-center justify-center bg-background">
+   259→        <div className="flex flex-col items-center gap-4">
+   260→          <Loader2 className="size-8 animate-spin text-primary" />
+   261→          <p className="text-sm text-muted-foreground">Loading dashboard…</p>
+   262→        </div>
+   263→      </div>
+   264→    );
+   265→  }
+   266→
+   267→  return (
+   268→    <div className="min-h-screen bg-background flex flex-col">
+   269→      {/* ── Header ─────────────────────────────────────────── */}
+   270→      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+   271→        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+   272→          {/* Logo */}
+   273→          <div className="flex items-center gap-6">
+   274→            <div
+   275→              className="flex items-center gap-2.5 cursor-pointer"
+   276→              onClick={() => setView('dashboard')}
+   277→            >
+   278→              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
+   279→                <FileText className="size-5 text-primary" />
+   280→              </div>
+   281→              <span className="text-lg font-semibold tracking-tight">
+   282→                ResuMe<span className="text-primary">AI</span>
+   283→              </span>
+   284→            </div>
+   285→
+   286→            {/* Nav links - hidden on mobile */}
+   287→            <nav className="hidden md:flex items-center gap-1">
+   288→              <Button
+   289→                variant="ghost"
+   290→                size="sm"
+   291→                className="gap-2 text-primary bg-primary/10"
+   292→                onClick={() => setView('dashboard')}
+   293→              >
+   294→                <LayoutDashboard className="size-4" />
+   295→                Dashboard
+   296→              </Button>
+   297→              <Button
+   298→                variant="ghost"
+   299→                size="sm"
+   300→                className="gap-2 text-muted-foreground hover:text-foreground"
+   301→                onClick={() => setView('templates')}
+   302→              >
+   303→                <Eye className="size-4" />
+   304→                Templates
+   305→              </Button>
+   306→            </nav>
+   307→          </div>
+   308→
+   309→          {/* Right side: Create button + User menu */}
+   310→          <div className="flex items-center gap-3">
+   311→            <Button
+   312→              size="sm"
+   313→              className="hidden sm:flex gap-2"
+   314→              onClick={handleCreateResume}
+   315→            >
+   316→              <Plus className="size-4" />
+   317→              New Resume
+   318→            </Button>
+   319→
+   320→            <DropdownMenu>
+   321→              <DropdownMenuTrigger asChild>
+   322→                <Button
+   323→                  variant="ghost"
+   324→                  className="relative h-9 w-9 rounded-full"
+   325→                >
+   326→                  <Avatar className="size-9 border border-border">
+   327→                    <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+   328→                      {userInitials || 'U'}
+   329→                    </AvatarFallback>
+   330→                  </Avatar>
+   331→                </Button>
+   332→              </DropdownMenuTrigger>
+   333→              <DropdownMenuContent align="end" className="w-56">
+   334→                <div className="flex items-center gap-2 px-2 py-1.5">
+   335→                  <div className="flex flex-col space-y-0.5">
+   336→                    <p className="text-sm font-medium">{userName}</p>
+   337→                    <p className="text-xs text-muted-foreground">
+   338→                      {session?.user?.email}
+   339→                    </p>
+   340→                  </div>
+   341→                </div>
+   342→                <DropdownMenuSeparator />
+   343→                <DropdownMenuItem
+   344→                  className="sm:hidden gap-2"
+   345→                  onClick={handleCreateResume}
+   346→                >
+   347→                  <Plus className="size-4" />
+   348→                  New Resume
+   349→                </DropdownMenuItem>
+   350→                <DropdownMenuItem
+   351→                  className="gap-2"
+   352→                  onClick={() => setView('templates')}
+   353→                >
+   354→                  <Eye className="size-4" />
+   355→                  Templates
+   356→                </DropdownMenuItem>
+   357→                <DropdownMenuSeparator />
+   358→                <DropdownMenuItem
+   359→                  onClick={() => signOut({ callbackUrl: '/' })}
+   360→                  className="gap-2"
+   361→                >
+   362→                  <LogOut className="size-4" />
+   363→                  Sign Out
+   364→                </DropdownMenuItem>
+   365→              </DropdownMenuContent>
+   366→            </DropdownMenu>
+   367→          </div>
+   368→        </div>
+   369→      </header>
+   370→
+   371→      {/* ── Main content ───────────────────────────────────── */}
+   372→      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 flex-1 w-full">
+   373→        <motion.div
+   374→          variants={containerVariants}
+   375→          initial="hidden"
+   376→          animate="visible"
+   377→          className="space-y-8"
+   378→        >
+   379→          {/* ── Hero Section ──────────────────────────────────── */}
+   380→          <motion.div variants={itemVariants} className="space-y-2">
+   381→            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+   382→              Welcome back, <span className="text-primary">{userName}</span>
+   383→            </h1>
+   384→            <p className="text-muted-foreground">
+   385→              Build and manage your professional resumes with AI assistance.
+   386→            </p>
+   387→          </motion.div>
+   388→
+   389→          {/* ── Stats Row ─────────────────────────────────────── */}
+   390→          <motion.div variants={itemVariants}>
+   391→            <div className="grid gap-4 sm:grid-cols-3">
+   392→              {/* Total Resumes */}
+   393→              <Card className="border-border/30 bg-card/50">
+   394→                <CardContent className="p-5">
+   395→                  <div className="flex items-center justify-between">
+   396→                    <div className="space-y-1">
+   397→                      <p className="text-sm text-muted-foreground">Total Resumes</p>
+   398→                      <p className="text-3xl font-bold tracking-tight">{resumes.length}</p>
+   399→                    </div>
+   400→                    <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
+   401→                      <FileText className="size-5 text-primary" />
+   402→                    </div>
+   403→                  </div>
+   404→                </CardContent>
+   405→              </Card>
+   406→
+   407→              {/* Profile Completion */}
+   408→              <Card className="border-border/30 bg-card/50">
+   409→                <CardContent className="p-5">
+   410→                  <div className="flex items-center justify-between">
+   411→                    <div className="space-y-1">
+   412→                      <p className="text-sm text-muted-foreground">Profile Completion</p>
+   413→                      <p className="text-3xl font-bold tracking-tight">{profileCompletion}%</p>
+   414→                    </div>
+   415→                    <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10">
+   416→                      <CheckCircle2 className="size-5 text-emerald-500" />
+   417→                    </div>
+   418→                  </div>
+   419→                  <Progress value={profileCompletion} className="mt-3 h-1.5" />
+   420→                </CardContent>
+   421→              </Card>
+   422→
+   423→              {/* AI Chats */}
+   424→              <Card className="border-border/30 bg-card/50">
+   425→                <CardContent className="p-5">
+   426→                  <div className="flex items-center justify-between">
+   427→                    <div className="space-y-1">
+   428→                      <p className="text-sm text-muted-foreground">AI Sessions</p>
+   429→                      <p className="text-3xl font-bold tracking-tight">
+   430→                        {resumes.length > 0 ? resumes.length : 0}
+   431→                      </p>
+   432→                    </div>
+   433→                    <div className="flex size-11 items-center justify-center rounded-xl bg-sky-500/10">
+   434→                      <MessageSquare className="size-5 text-sky-400" />
+   435→                    </div>
+   436→                  </div>
+   437→                </CardContent>
+   438→              </Card>
+   439→            </div>
+   440→          </motion.div>
+   441→
+   442→          {/* ── Quick Actions ─────────────────────────────────── */}
+   443→          <motion.div variants={itemVariants}>
+   444→            <h2 className="mb-4 text-lg font-semibold">Quick Actions</h2>
+   445→            <div className="grid gap-4 sm:grid-cols-2">
+   446→              {/* Chat with AI */}
+   447→              <motion.div
+   448→                variants={cardHover}
+   449→                initial="rest"
+   450→                whileHover="hover"
+   451→                className="cursor-pointer"
+   452→                onClick={handleCreateResume}
+   453→              >
+   454→                <Card className="h-full border-primary/30 bg-primary/5 transition-colors hover:border-primary/50 overflow-hidden relative">
+   455→                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+   456→                  <CardHeader className="relative">
+   457→                    <div className="flex items-center gap-4">
+   458→                      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/15">
+   459→                        <Sparkles className="size-6 text-primary" />
+   460→                      </div>
+   461→                      <div className="flex-1 min-w-0">
+   462→                        <CardTitle className="text-base">Chat with AI</CardTitle>
+   463→                        <CardDescription className="mt-0.5">
+   464→                          Describe your dream job and get a tailored resume
+   465→                        </CardDescription>
+   466→                      </div>
+   467→                      <ArrowRightSlim className="size-5 text-primary/60 hidden sm:block" />
+   468→                    </div>
+   469→                  </CardHeader>
+   470→                </Card>
+   471→              </motion.div>
+   472→
+   473→              {/* Quick Build */}
+   474→              <motion.div
+   475→                variants={cardHover}
+   476→                initial="rest"
+   477→                whileHover="hover"
+   478→                className="cursor-pointer"
+   479→                onClick={() => {
+   480→                  clearChat();
+   481→                  setJobAnalysis(null);
+   482→                  setTargetJobDescription('');
+   483→                  setTargetJobTitle('');
+   484→                  setPolishedContent(null);
+   485→                  setSelectedTemplate('modern');
+   486→                  setView('smart-form');
+   487→                }}
+   488→              >
+   489→                <Card className="h-full border-border/50 transition-colors hover:border-primary/40 overflow-hidden relative">
+   490→                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/3 rounded-full -translate-y-1/2 translate-x-1/2" />
+   491→                  <CardHeader className="relative">
+   492→                    <div className="flex items-center gap-4">
+   493→                      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
+   494→                        <BarChart3 className="size-6 text-primary" />
+   495→                      </div>
+   496→                      <div className="flex-1 min-w-0">
+   497→                        <CardTitle className="text-base">Quick Build</CardTitle>
+   498→                        <CardDescription className="mt-0.5">
+   499→                          Skip AI chat and fill in your details directly
+   500→                        </CardDescription>
+   501→                      </div>
+   502→                      <ArrowRightSlim className="size-5 text-muted-foreground/40 hidden sm:block" />
+   503→                    </div>
+   504→                  </CardHeader>
+   505→                </Card>
+   506→              </motion.div>
+   507→            </div>
+   508→          </motion.div>
+   509→
+   510→          {/* ── Existing Resumes ──────────────────────────────── */}
+   511→          <motion.div variants={itemVariants}>
+   512→            <div className="flex items-center justify-between mb-4">
+   513→              <h2 className="text-lg font-semibold">Your Resumes</h2>
+   514→              {resumes.length > 0 && (
+   515→                <Button
+   516→                  variant="outline"
+   517→                  size="sm"
+   518→                  className="gap-2 text-xs"
+   519→                  onClick={handleCreateResume}
+   520→                >
+   521→                  <Plus className="size-3.5" />
+   522→                  New
+   523→                </Button>
+   524→              )}
+   525→            </div>
+   526→
+   527→            {resumes.length === 0 ? (
+   528→              <Card className="border-dashed border-border/60">
+   529→                <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
+   530→                  <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50">
+   531→                    <FolderOpen className="size-8 text-muted-foreground" />
+   532→                  </div>
+   533→                  <div className="space-y-1">
+   534→                    <p className="font-semibold text-lg">No resumes yet</p>
+   535→                    <p className="text-sm text-muted-foreground max-w-sm">
+   536→                      Create your first AI-powered resume to get started. Our AI will help you craft the perfect resume for any job.
+   537→                    </p>
+   538→                  </div>
+   539→                  <div className="flex flex-col sm:flex-row gap-3 mt-2">
+   540→                    <Button
+   541→                      onClick={handleCreateResume}
+   542→                      className="gap-2"
+   543→                    >
+   544→                      <Sparkles className="size-4" />
+   545→                      Create with AI
+   546→                    </Button>
+   547→                    <Button
+   548→                      variant="outline"
+   549→                      onClick={() => {
+   550→                        clearChat();
+   551→                        setJobAnalysis(null);
+   552→                        setTargetJobDescription('');
+   553→                        setTargetJobTitle('');
+   554→                        setPolishedContent(null);
+   555→                        setSelectedTemplate('modern');
+   556→                        setView('smart-form');
+   557→                      }}
+   558→                      className="gap-2"
+   559→                    >
+   560→                      <BarChart3 className="size-4" />
+   561→                      Quick Build
+   562→                    </Button>
+   563→                  </div>
+   564→                </CardContent>
+   565→              </Card>
+   566→            ) : (
+   567→              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   568→                {resumes.map((resume, idx) => (
+   569→                  <motion.div
+   570→                    key={resume.id}
+   571→                    variants={cardHover}
+   572→                    initial="rest"
+   573→                    whileHover="hover"
+   574→                  >
+   575→                    <Card
+   576→                      className="group cursor-pointer border-border/30 bg-card/50 transition-all hover:border-primary/40 hover:bg-card/80"
+   577→                      onClick={() => handleEditResume(resume)}
+   578→                    >
+   579→                      <CardHeader className="pb-3">
+   580→                        <div className="flex items-start justify-between gap-2">
+   581→                          <div className="flex items-center gap-3 min-w-0">
+   582→                            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+   583→                              <FileText className="size-5 text-primary" />
+   584→                            </div>
+   585→                            <div className="min-w-0 flex-1">
+   586→                              <CardTitle className="truncate text-base leading-snug">
+   587→                                {resume.title}
+   588→                              </CardTitle>
+   589→                              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+   590→                                <Clock className="size-3" />
+   591→                                {formatDate(resume.updatedAt)}
+   592→                              </div>
+   593→                            </div>
+   594→                          </div>
+   595→                          <Button
+   596→                            variant="ghost"
+   597→                            size="icon"
+   598→                            className="size-8 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+   599→                            onClick={(e) => {
+   600→                              e.stopPropagation();
+   601→                              setDeleteTarget(resume);
+   602→                            }}
+   603→                          >
+   604→                            <Trash2 className="size-4" />
+   605→                            <span className="sr-only">Delete resume</span>
+   606→                          </Button>
+   607→                        </div>
+   608→                      </CardHeader>
+   609→                      <CardContent className="pt-0">
+   610→                        <Badge
+   611→                          variant="secondary"
+   612→                          className={`text-xs font-medium ${templateColors[resume.templateId] || 'bg-primary/15 text-primary'}`}
+   613→                        >
+   614→                          {templateNames[resume.templateId] || resume.templateId}
+   615→                        </Badge>
+   616→                      </CardContent>
+   617→                    </Card>
+   618→                  </motion.div>
+   619→                ))}
+   620→              </div>
+   621→            )}
+   622→          </motion.div>
+   623→        </motion.div>
+   624→      </main>
+   625→
+   626→      {/* ── Delete Confirmation Dialog ──────────────────────── */}
+   627→      <AlertDialog
+   628→        open={!!deleteTarget}
+   629→        onOpenChange={(open) => !open && setDeleteTarget(null)}
+   630→      >
+   631→        <AlertDialogContent>
+   632→          <AlertDialogHeader>
+   633→            <AlertDialogTitle>Delete Resume</AlertDialogTitle>
+   634→            <AlertDialogDescription>
+   635→              Are you sure you want to delete &ldquo;{deleteTarget?.title}&rdquo;?
+   636→              This action cannot be undone.
+   637→            </AlertDialogDescription>
+   638→          </AlertDialogHeader>
+   639→          <AlertDialogFooter>
+   640→            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+   641→            <AlertDialogAction
+   642→              onClick={handleDelete}
+   643→              disabled={deleting}
+   644→              className="bg-destructive text-white hover:bg-destructive/90"
+   645→            >
+   646→              {deleting ? (
+   647→                <>
+   648→                  <Loader2 className="size-4 animate-spin" />
+   649→                  Deleting…
+   650→                </>
+   651→              ) : (
+   652→                'Delete'
+   653→              )}
+   654→            </AlertDialogAction>
+   655→          </AlertDialogFooter>
+   656→        </AlertDialogContent>
+   657→      </AlertDialog>
+   658→
+   659→      {/* Footer */}
+   660→      <footer className="border-t border-border/30 mt-auto">
+   661→        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+   662→          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+   663→            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+   664→              <FileText className="size-4 text-primary" />
+   665→              <span>
+   666→                Resu<span className="text-primary">Me</span> AI
+   667→              </span>
+   668→              <span className="mx-1">&middot;</span>
+   669→              <span>&copy; {new Date().getFullYear()}</span>
+   670→            </div>
+   671→            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   672→              <span>AI-Powered Resume Builder</span>
+   673→            </div>
+   674→          </div>
+   675→        </div>
+   676→      </footer>
+   677→    </div>
+   678→  );
+   679→}
+   680→
+   681→// ── Inline arrow icon (lightweight) ─────────────────────────
+   682→function ArrowRightSlim({ className }: { className?: string }) {
+   683→  return (
+   684→    <svg
+   685→      className={className}
+   686→      width="20"
+   687→      height="20"
+   688→      viewBox="0 0 24 24"
+   689→      fill="none"
+   690→      stroke="currentColor"
+   691→      strokeWidth="2"
+   692→      strokeLinecap="round"
+   693→      strokeLinejoin="round"
+   694→    >
+   695→      <path d="M5 12h14" />
+   696→      <path d="m12 5 7 7-7 7" />
+   697→    </svg>
+   698→  );
+   699→}
+   700→

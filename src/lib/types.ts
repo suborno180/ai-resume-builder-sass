@@ -2,15 +2,14 @@
 // Type definitions for the AI Resume Builder SaaS application
 // ============================================================
 
-/** Represents the current view/page of the application */
-export type AppView =
-  | 'landing'       // Landing page (default)
-  | 'dashboard'     // Dashboard after login - shows user's resumes
-  | 'ai-chat'       // AI Chat page - user describes the job they want
-  | 'smart-form'    // Smart form - dynamic fields based on AI analysis
-  | 'ai-polish'     // AI Enhancement page - AI polishes content for the job
-  | 'templates'     // Template gallery
-  | 'preview';      // Resume preview with A4 PDF export
+/** Hash-based route paths */
+export type AppRoute =
+  | '/'           // Landing page
+  | '/dashboard'  // Dashboard - shows user's resumes
+  | '/chat'       // AI Chat - ChatGPT-like conversation
+  | '/profile'    // Profile management
+  | '/templates'  // Template gallery
+  | '/resume';    // Resume preview with A4 PDF
 
 /** User profile data */
 export interface ProfileData {
@@ -25,6 +24,7 @@ export interface ProfileData {
   linkedin?: string;
   github?: string;
   summary?: string;
+  hobbies?: string;
 }
 
 /** Work experience entry */
@@ -82,7 +82,7 @@ export interface ResumeRenderData {
   skills: SkillData[];
 }
 
-/** AI Job Analysis Result - what AI returns after analyzing the job description */
+/** AI Job Analysis Result */
 export interface AIJobAnalysis {
   jobTitle: string;
   industry: string;
@@ -93,7 +93,7 @@ export interface AIJobAnalysis {
   fieldRequirements: FieldRequirement[];
 }
 
-/** Dynamic field requirement - what fields AI says are needed for this job */
+/** Dynamic field requirement */
 export interface FieldRequirement {
   section: 'personal' | 'summary' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'languages' | 'volunteer';
   required: boolean;
@@ -105,14 +105,51 @@ export interface FieldRequirement {
 /** AI Polished Resume Content */
 export interface AIPolishedContent {
   summary: string;
-  experienceBullets: Record<string, string[]>; // keyed by experience id
+  experienceBullets: Record<string, string[]>;
   skills: Array<{ name: string; category: string }>;
   suggestedTemplate: string;
   suggestedTemplateReason: string;
 }
 
-/** Chat message in the AI conversation */
+/** Chat message with profile extraction data */
 export interface ChatMessage {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
+  /** Extracted profile fields that need user confirmation */
+  extractedInfo?: ExtractedField[];
+  /** Timestamp */
+  createdAt?: string;
+}
+
+/** A single extracted field pending confirmation */
+export interface ExtractedField {
+  id: string;
+  section: 'personal' | 'experience' | 'education' | 'skills' | 'summary' | 'hobbies';
+  field: string;
+  label: string;
+  value: string | Record<string, string> | Record<string, string>[];
+  status: 'pending' | 'confirmed' | 'rejected' | 'edited';
+  /** The edited value if user modified it */
+  editedValue?: string | Record<string, string> | Record<string, string>[];
+}
+
+/** Conversation summary for sidebar */
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  targetJob: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  preview: string;
+}
+
+/** Profile update payload sent when user confirms extracted info */
+export interface ProfileUpdatePayload {
+  personal?: Partial<ProfileData>;
+  summary?: string;
+  experiences?: Omit<ExperienceData, 'id' | 'order'>[];
+  education?: Omit<EducationData, 'id' | 'order'>[];
+  skills?: Omit<SkillData, 'id' | 'order'>[];
 }

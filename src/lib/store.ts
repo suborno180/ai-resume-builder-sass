@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import type {
-  AppView,
+  AppRoute,
   ProfileData,
   ExperienceData,
   EducationData,
   SkillData,
   ResumeData,
   AIJobAnalysis,
-  AIPolishedContent,
   ChatMessage,
+  ExtractedField,
+  ConversationSummary,
 } from '@/lib/types';
 
 // ============================================================
@@ -16,50 +17,51 @@ import type {
 // ============================================================
 
 export interface AppState {
-  // Navigation
-  currentView: AppView;
-  setView: (view: AppView) => void;
+  // ── Hash-based routing ──────────────────────────────────────
+  currentRoute: AppRoute;
+  routeParams: Record<string, string>;
+  setRoute: (route: AppRoute, params?: Record<string, string>) => void;
 
-  // Auth dialog
+  // ── Auth dialog ─────────────────────────────────────────────
   authDialogOpen: boolean;
   authMode: 'login' | 'signup';
   setAuthDialog: (open: boolean, mode?: 'login' | 'signup') => void;
 
-  // Profile data (local cache)
+  // ── Profile data (local cache) ──────────────────────────────
   profile: ProfileData | null;
   setProfile: (profile: ProfileData | null) => void;
 
-  // Experiences
+  // ── Experiences ─────────────────────────────────────────────
   experiences: ExperienceData[];
   setExperiences: (experiences: ExperienceData[]) => void;
   addExperience: (experience: ExperienceData) => void;
   updateExperience: (id: string, experience: Partial<ExperienceData>) => void;
   removeExperience: (id: string) => void;
 
-  // Education
+  // ── Education ───────────────────────────────────────────────
   education: EducationData[];
   setEducation: (education: EducationData[]) => void;
   addEducation: (education: EducationData) => void;
   updateEducation: (id: string, education: Partial<EducationData>) => void;
   removeEducation: (id: string) => void;
 
-  // Skills
+  // ── Skills ──────────────────────────────────────────────────
   skills: SkillData[];
   setSkills: (skills: SkillData[]) => void;
   addSkill: (skill: SkillData) => void;
   removeSkill: (id: string) => void;
 
-  // Resume
+  // ── Resume ──────────────────────────────────────────────────
   currentResume: ResumeData | null;
   setCurrentResume: (resume: ResumeData | null) => void;
   resumes: ResumeData[];
   setResumes: (resumes: ResumeData[]) => void;
 
-  // Selected template
+  // ── Selected template ───────────────────────────────────────
   selectedTemplate: string;
   setSelectedTemplate: (templateId: string) => void;
 
-  // AI job analysis
+  // ── AI job analysis ─────────────────────────────────────────
   jobAnalysis: AIJobAnalysis | null;
   setJobAnalysis: (analysis: AIJobAnalysis | null) => void;
   targetJobDescription: string;
@@ -67,29 +69,38 @@ export interface AppState {
   targetJobTitle: string;
   setTargetJobTitle: (title: string) => void;
 
-  // AI Chat
+  // ── AI Chat ─────────────────────────────────────────────────
   currentConversationId: string | null;
   setCurrentConversationId: (id: string | null) => void;
   chatMessages: ChatMessage[];
   addChatMessage: (message: ChatMessage) => void;
   setChatMessages: (messages: ChatMessage[]) => void;
   clearChat: () => void;
+  conversations: ConversationSummary[];
+  setConversations: (conversations: ConversationSummary[]) => void;
 
-  // AI Polish
-  polishedContent: AIPolishedContent | null;
-  setPolishedContent: (content: AIPolishedContent | null) => void;
+  // ── Extracted fields pending confirmation ───────────────────
+  pendingFields: ExtractedField[];
+  setPendingFields: (fields: ExtractedField[]) => void;
+  updateFieldStatus: (fieldId: string, status: ExtractedField['status'], editedValue?: ExtractedField['editedValue']) => void;
+  removePendingField: (fieldId: string) => void;
+  clearPendingFields: () => void;
 
-  // AI loading
+  // ── AI loading ──────────────────────────────────────────────
   aiLoading: boolean;
   setAiLoading: (loading: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  // ── Navigation ─────────────────────────────────────────────
-  currentView: 'landing',
-  setView: (view) => set({ currentView: view }),
+  // ── Routing ─────────────────────────────────────────────────
+  currentRoute: '/',
+  routeParams: {},
+  setRoute: (route, params = {}) => {
+    set({ currentRoute: route, routeParams: params });
+    window.location.hash = route;
+  },
 
-  // ── Auth dialog ────────────────────────────────────────────
+  // ── Auth dialog ─────────────────────────────────────────────
   authDialogOpen: false,
   authMode: 'login',
   setAuthDialog: (open, mode) =>
@@ -98,11 +109,11 @@ export const useAppStore = create<AppState>((set) => ({
       ...(mode !== undefined ? { authMode: mode } : {}),
     }),
 
-  // ── Profile ────────────────────────────────────────────────
+  // ── Profile ─────────────────────────────────────────────────
   profile: null,
   setProfile: (profile) => set({ profile }),
 
-  // ── Experiences ────────────────────────────────────────────
+  // ── Experiences ─────────────────────────────────────────────
   experiences: [],
   setExperiences: (experiences) => set({ experiences }),
   addExperience: (experience) =>
@@ -118,7 +129,7 @@ export const useAppStore = create<AppState>((set) => ({
       experiences: state.experiences.filter((exp) => exp.id !== id),
     })),
 
-  // ── Education ──────────────────────────────────────────────
+  // ── Education ───────────────────────────────────────────────
   education: [],
   setEducation: (education) => set({ education }),
   addEducation: (education) =>
@@ -134,7 +145,7 @@ export const useAppStore = create<AppState>((set) => ({
       education: state.education.filter((edu) => edu.id !== id),
     })),
 
-  // ── Skills ─────────────────────────────────────────────────
+  // ── Skills ──────────────────────────────────────────────────
   skills: [],
   setSkills: (skills) => set({ skills }),
   addSkill: (skill) =>
@@ -144,17 +155,17 @@ export const useAppStore = create<AppState>((set) => ({
       skills: state.skills.filter((skill) => skill.id !== id),
     })),
 
-  // ── Resume ─────────────────────────────────────────────────
+  // ── Resume ──────────────────────────────────────────────────
   currentResume: null,
   setCurrentResume: (resume) => set({ currentResume: resume }),
   resumes: [],
   setResumes: (resumes) => set({ resumes }),
 
-  // ── Selected template ──────────────────────────────────────
+  // ── Selected template ───────────────────────────────────────
   selectedTemplate: 'modern',
   setSelectedTemplate: (templateId) => set({ selectedTemplate: templateId }),
 
-  // ── AI Job Analysis ────────────────────────────────────────
+  // ── AI Job Analysis ─────────────────────────────────────────
   jobAnalysis: null,
   setJobAnalysis: (analysis) => set({ jobAnalysis: analysis }),
   targetJobDescription: '',
@@ -162,20 +173,35 @@ export const useAppStore = create<AppState>((set) => ({
   targetJobTitle: '',
   setTargetJobTitle: (title) => set({ targetJobTitle: title }),
 
-  // ── AI Chat ────────────────────────────────────────────────
+  // ── AI Chat ─────────────────────────────────────────────────
   currentConversationId: null,
   setCurrentConversationId: (id) => set({ currentConversationId: id }),
   chatMessages: [],
   addChatMessage: (message) =>
     set((state) => ({ chatMessages: [...state.chatMessages, message] })),
   setChatMessages: (messages) => set({ chatMessages: messages }),
-  clearChat: () => set({ chatMessages: [] }),
+  clearChat: () => set({ chatMessages: [], pendingFields: [] }),
+  conversations: [],
+  setConversations: (conversations) => set({ conversations }),
 
-  // ── AI Polish ──────────────────────────────────────────────
-  polishedContent: null,
-  setPolishedContent: (content) => set({ polishedContent: content }),
+  // ── Pending fields for confirmation ─────────────────────────
+  pendingFields: [],
+  setPendingFields: (fields) => set({ pendingFields: fields }),
+  updateFieldStatus: (fieldId, status, editedValue) =>
+    set((state) => ({
+      pendingFields: state.pendingFields.map((f) =>
+        f.id === fieldId
+          ? { ...f, status, ...(editedValue !== undefined ? { editedValue } : {}) }
+          : f
+      ),
+    })),
+  removePendingField: (fieldId) =>
+    set((state) => ({
+      pendingFields: state.pendingFields.filter((f) => f.id !== fieldId),
+    })),
+  clearPendingFields: () => set({ pendingFields: [] }),
 
-  // ── AI loading ─────────────────────────────────────────────
+  // ── AI loading ──────────────────────────────────────────────
   aiLoading: false,
   setAiLoading: (loading) => set({ aiLoading: loading }),
 }));

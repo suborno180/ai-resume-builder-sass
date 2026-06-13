@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppStore } from '@/lib/store';
 
 export default function AuthDialog() {
-  const { authDialogOpen, authMode, setAuthDialog, setView, setProfile, setExperiences, setEducation, setSkills } =
+  const { authDialogOpen, authMode, setAuthDialog, setRoute, setProfile, setExperiences, setEducation, setSkills } =
     useAppStore();
   const { data: session } = useSession();
 
@@ -144,7 +144,7 @@ export default function AuthDialog() {
           resetForm();
           setAuthDialog(false);
           await fetchProfile();
-          setView('dashboard');
+          setRoute('/dashboard');
         }
       } catch {
         setLoginError('Something went wrong. Please try again.');
@@ -153,7 +153,7 @@ export default function AuthDialog() {
         setLoginLoading(false);
       }
     },
-    [loginEmail, loginPassword, resetForm, setAuthDialog, fetchProfile, setView]
+    [loginEmail, loginPassword, resetForm, setAuthDialog, fetchProfile, setRoute]
   );
 
   // ── Signup handler ───────────────────────────────────────
@@ -205,7 +205,6 @@ export default function AuthDialog() {
         });
 
         if (result?.error) {
-          // Registration succeeded but auto-login failed — prompt manual login
           toast.success('Account created! Please sign in.');
           setAuthDialog(true, 'login');
           resetForm();
@@ -214,7 +213,7 @@ export default function AuthDialog() {
           resetForm();
           setAuthDialog(false);
           await fetchProfile();
-          setView('dashboard');
+          setRoute('/dashboard');
         }
       } catch {
         setSignupError('Something went wrong. Please try again.');
@@ -223,7 +222,7 @@ export default function AuthDialog() {
         setSignupLoading(false);
       }
     },
-    [signupName, signupEmail, signupPassword, signupConfirm, resetForm, setAuthDialog, fetchProfile, setView]
+    [signupName, signupEmail, signupPassword, signupConfirm, resetForm, setAuthDialog, fetchProfile, setRoute]
   );
 
   // If the user is already authenticated, don't show the dialog
