@@ -80,7 +80,7 @@ function MinimalTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', margin: 0, color: '#000' }}>
@@ -251,13 +251,13 @@ function ModernTemplate({ profile, experiences, education, skills }: ResumeRende
             src={profile.image}
             alt=""
             style={{
-              width: 56, height: 56, borderRadius: '50%',
+              width: 40, height: 40, borderRadius: '50%',
               objectFit: 'cover', marginBottom: 14,
             }}
           />
         ) : (
           <div style={{
-            width: 56, height: 56, borderRadius: '50%',
+            width: 40, height: 40, borderRadius: '50%',
             background: accent, display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 14,
             fontSize: 20, fontWeight: 700, color: 'white',
@@ -462,7 +462,7 @@ function ProfessionalTemplate({ profile, experiences, education, skills }: Resum
             <img
               src={profile.image}
               alt=""
-              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.04em', margin: 0, color: navy, textTransform: 'uppercase' }}>
@@ -636,7 +636,7 @@ function CreativeTemplate({ profile, experiences, education, skills }: ResumeRen
             <img
               src={profile.image}
               alt=""
-              style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <div>
@@ -838,7 +838,7 @@ function ExecutiveTemplate({ profile, experiences, education, skills }: ResumeRe
           <img
             src={profile.image}
             alt=""
-            style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+            style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
           />
         )}
         <div>
@@ -1005,7 +1005,7 @@ function CompactTemplate({ profile, experiences, education, skills }: ResumeRend
             <img
               src={profile.image}
               alt=""
-              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
           )}
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.01em', color: '#000' }}>
@@ -1824,6 +1824,581 @@ function BoldTemplate({ profile, experiences, education, skills }: ResumeRenderD
 
 
 // ════════════════════════════════════════════════════════════════
+// 11. SWISS — "Swiss Design"
+// Clean grid-based layout with thick left accent bar and geometric structure
+// ════════════════════════════════════════════════════════════════
+function SwissTemplate({ profile, experiences, education, skills }: ResumeRenderData) {
+  const name = fullName(profile);
+  const accentColor = '#dc2626';
+
+  const contactItems = [
+    profile?.email,
+    profile?.phone,
+    profile?.location,
+    profile?.website,
+    profile?.linkedin,
+    profile?.github,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div style={{ ...a4Style, padding: 0, display: 'flex', overflow: 'visible' }}>
+      {/* Thick left accent bar */}
+      <div style={{ width: 8, background: accentColor, flexShrink: 0 }} />
+
+      {/* Main content */}
+      <div style={{ flex: 1, padding: '12mm 15mm 15mm' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+            {profile?.image && (
+              <img src={profile.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            )}
+            <div>
+              <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.03em', margin: 0, color: accentColor, textTransform: 'uppercase' }}>
+                {name}
+              </h1>
+              {profile?.jobTitle && (
+                <div style={{ fontSize: 11, color: '#444', fontWeight: 400, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {profile.jobTitle}
+                </div>
+              )}
+            </div>
+          </div>
+          {contactItems.length > 0 && (
+            <div style={{ fontSize: 8.5, color: '#555', letterSpacing: '0.03em', marginTop: 6 }}>
+              {contactItems.map((item, i) => (
+                <span key={i}>{item}{i < contactItems.length - 1 ? '  ·  ' : ''}</span>
+              ))}
+            </div>
+          )}
+          <div style={{ height: 3, background: accentColor, marginTop: 12 }} />
+        </div>
+
+        {/* Summary */}
+        {profile?.summary && (
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6, color: '#111' }}>
+              Summary
+            </h2>
+            <p style={{ fontSize: 9.5, color: '#333', margin: 0, lineHeight: 1.65 }}>{profile.summary}</p>
+          </div>
+        )}
+
+        {/* Experience */}
+        {experiences.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8, color: '#111' }}>
+              Experience
+            </h2>
+            {experiences.map((exp) => {
+              const bullets = parseBullets(exp.description);
+              return (
+                <div key={exp.id} style={{ marginBottom: 10, paddingLeft: 10, borderLeft: `2px solid ${accentColor}30` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <h3 style={{ fontSize: 10, fontWeight: 700, margin: 0, color: '#111' }}>{exp.position}</h3>
+                    <span style={{ fontSize: 8, color: '#888', flexShrink: 0, marginLeft: 8 }}>
+                      {dateRange(exp.startDate, exp.endDate, exp.current)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 9, color: accentColor, fontWeight: 600 }}>
+                    {exp.company}{exp.location ? ` · ${exp.location}` : ''}
+                  </div>
+                  {bullets.length > 0 && (
+                    <ul style={{ margin: '3px 0 0', paddingLeft: 14, fontSize: 9, color: '#444', lineHeight: 1.5 }}>
+                      {bullets.map((b, i) => <li key={i} style={{ marginBottom: 1 }}>{b}</li>)}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Education */}
+        {education.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8, color: '#111' }}>
+              Education
+            </h2>
+            {education.map((edu) => (
+              <div key={edu.id} style={{ marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${accentColor}30` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#111' }}>
+                    {edu.degree}{edu.field ? ` in ${edu.field}` : ''}
+                  </span>
+                  <span style={{ fontSize: 8, color: '#888', flexShrink: 0, marginLeft: 8 }}>
+                    {dateRange(edu.startDate, edu.endDate)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 9, color: accentColor, fontWeight: 500 }}>{edu.institution}</div>
+                {edu.gpa && <div style={{ fontSize: 8.5, color: '#666' }}>GPA: {edu.gpa}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <div>
+            <h2 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8, color: '#111' }}>
+              Skills
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {skills.map((skill) => (
+                <span key={skill.id} style={{
+                  fontSize: 8.5, background: `${accentColor}10`, padding: '3px 10px',
+                  borderRadius: 2, color: '#333', fontWeight: 500, borderLeft: `2px solid ${accentColor}`,
+                }}>
+                  {skill.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hobbies */}
+        {profile?.hobbies && (
+          <div style={{ marginTop: 16 }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6, color: '#111' }}>
+              Interests
+            </h2>
+            <p style={{ fontSize: 9, color: '#555', margin: 0, lineHeight: 1.6 }}>{profile.hobbies}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// 12. CORPORATE — "Corporate Blue"
+// Traditional corporate style with teal accents and structured sections
+// ════════════════════════════════════════════════════════════════
+function CorporateTemplate({ profile, experiences, education, skills }: ResumeRenderData) {
+  const name = fullName(profile);
+  const accentColor = '#0d9488';
+
+  const contactItems = [
+    { label: 'Email', value: profile?.email },
+    { label: 'Phone', value: profile?.phone },
+    { label: 'Location', value: profile?.location },
+    { label: 'Web', value: profile?.website },
+    { label: 'LinkedIn', value: profile?.linkedin },
+    { label: 'GitHub', value: profile?.github },
+  ].filter((item) => item.value);
+
+  const skillsByCategory = skills.reduce<Record<string, SkillData[]>>((acc, skill) => {
+    const cat = skill.category || 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(skill);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ ...a4Style, padding: 0, overflow: 'visible' }}>
+      {/* Header bar */}
+      <div style={{ background: accentColor, padding: '14mm 15mm 10mm', color: 'white' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {profile?.image && (
+            <img src={profile.image} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.5)' }} />
+          )}
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', letterSpacing: '-0.01em' }}>{name}</h1>
+            {profile?.jobTitle && (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 400, marginTop: 2 }}>{profile.jobTitle}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '8mm 15mm 15mm' }}>
+        {/* Contact row */}
+        {contactItems.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, padding: '8px 12px', background: '#f8fafc', borderRadius: 4, border: '1px solid #e2e8f0' }}>
+            {contactItems.map((item, i) => (
+              <div key={i} style={{ fontSize: 8.5, color: '#444' }}>
+                <span style={{ fontWeight: 600, color: accentColor }}>{item.label}: </span>
+                <span style={{ wordBreak: 'break-all' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Summary */}
+        {profile?.summary && (
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, paddingBottom: 4, borderBottom: `2px solid ${accentColor}30` }}>
+              Professional Summary
+            </h2>
+            <p style={{ fontSize: 9.5, color: '#333', margin: 0, lineHeight: 1.65 }}>{profile.summary}</p>
+          </div>
+        )}
+
+        {/* Two columns for Experience/Education */}
+        <div style={{ display: 'flex', gap: 20 }}>
+          {/* Left column - Experience */}
+          <div style={{ flex: 1 }}>
+            {experiences.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h2 style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}30` }}>
+                  Work Experience
+                </h2>
+                {experiences.map((exp) => {
+                  const bullets = parseBullets(exp.description);
+                  return (
+                    <div key={exp.id} style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <h3 style={{ fontSize: 10, fontWeight: 700, margin: 0, color: '#111' }}>{exp.position}</h3>
+                        <span style={{ fontSize: 8, color: '#888', flexShrink: 0, marginLeft: 8 }}>
+                          {dateRange(exp.startDate, exp.endDate, exp.current)}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 9, color: accentColor, fontWeight: 600 }}>
+                        {exp.company}{exp.location ? ` · ${exp.location}` : ''}
+                      </div>
+                      {bullets.length > 0 && (
+                        <ul style={{ margin: '3px 0 0', paddingLeft: 14, fontSize: 9, color: '#444', lineHeight: 1.5 }}>
+                          {bullets.map((b, i) => <li key={i} style={{ marginBottom: 1 }}>{b}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Right column - Education & Skills */}
+          <div style={{ width: '35%', minWidth: 0 }}>
+            {education.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h2 style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}30` }}>
+                  Education
+                </h2>
+                {education.map((edu) => (
+                  <div key={edu.id} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 9.5, fontWeight: 700, color: '#111' }}>
+                      {edu.degree}{edu.field ? ` in ${edu.field}` : ''}
+                    </div>
+                    <div style={{ fontSize: 9, color: '#555' }}>{edu.institution}</div>
+                    <div style={{ fontSize: 8, color: '#888' }}>{dateRange(edu.startDate, edu.endDate)}</div>
+                    {edu.gpa && <div style={{ fontSize: 8, color: '#666' }}>GPA: {edu.gpa}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {skills.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h2 style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${accentColor}30` }}>
+                  Skills
+                </h2>
+                {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+                  <div key={category} style={{ marginBottom: 6 }}>
+                    <div style={{ fontSize: 8, color: '#888', fontWeight: 600, textTransform: 'uppercase', marginBottom: 3 }}>{category}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                      {catSkills.map((skill) => (
+                        <span key={skill.id} style={{
+                          fontSize: 8, background: `${accentColor}12`, padding: '2px 8px',
+                          borderRadius: 10, color: '#333', fontWeight: 500,
+                        }}>
+                          {skill.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {profile?.hobbies && (
+              <div>
+                <h2 style={{ fontSize: 11, fontWeight: 700, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, paddingBottom: 4, borderBottom: `2px solid ${accentColor}30` }}>
+                  Interests
+                </h2>
+                <p style={{ fontSize: 9, color: '#555', margin: 0, lineHeight: 1.6 }}>{profile.hobbies}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// 13. INFRESH — "Infresh"
+// Modern fresh layout with rounded sections and soft shadows
+// ════════════════════════════════════════════════════════════════
+function InfreshTemplate({ profile, experiences, education, skills }: ResumeRenderData) {
+  const name = fullName(profile);
+  const accent = '#7c3aed';
+
+  const contactItems = [
+    profile?.email, profile?.phone, profile?.location,
+    profile?.website, profile?.linkedin, profile?.github,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div style={{ ...a4Style, padding: 0, background: '#fafafa', overflow: 'visible' }}>
+      {/* Header with pill-shaped background */}
+      <div style={{ padding: '14mm 15mm 8mm' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+          {profile?.image && (
+            <img src={profile.image} alt="" style={{ width: 40, height: 40, borderRadius: 16, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} />
+          )}
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: '#111', letterSpacing: '-0.02em' }}>{name}</h1>
+            {profile?.jobTitle && (
+              <div style={{ fontSize: 11, color: accent, fontWeight: 600, marginTop: 2 }}>{profile.jobTitle}</div>
+            )}
+          </div>
+        </div>
+        {contactItems.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+            {contactItems.map((item, i) => (
+              <span key={i} style={{
+                fontSize: 8, background: 'white', padding: '3px 10px',
+                borderRadius: 12, color: '#555', border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)', wordBreak: 'break-all',
+              }}>
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ padding: '0 15mm 15mm' }}>
+        {/* Summary */}
+        {profile?.summary && (
+          <div style={{ background: 'white', borderRadius: 10, padding: 14, marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+              About Me
+            </h2>
+            <p style={{ fontSize: 9.5, color: '#444', margin: 0, lineHeight: 1.6 }}>{profile.summary}</p>
+          </div>
+        )}
+
+        {/* Experience */}
+        {experiences.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 10, padding: 14, marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <h2 style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+              Experience
+            </h2>
+            {experiences.map((exp, idx) => {
+              const bullets = parseBullets(exp.description);
+              return (
+                <div key={exp.id} style={{ marginBottom: idx < experiences.length - 1 ? 10 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <h3 style={{ fontSize: 10, fontWeight: 700, margin: 0, color: '#111' }}>{exp.position}</h3>
+                    <span style={{ fontSize: 8, color: '#999', flexShrink: 0, marginLeft: 8, background: '#f3f4f6', padding: '2px 8px', borderRadius: 8 }}>
+                      {dateRange(exp.startDate, exp.endDate, exp.current)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 9, color: accent, fontWeight: 600 }}>
+                    {exp.company}{exp.location ? ` · ${exp.location}` : ''}
+                  </div>
+                  {bullets.length > 0 && (
+                    <ul style={{ margin: '3px 0 0', paddingLeft: 14, fontSize: 9, color: '#444', lineHeight: 1.5 }}>
+                      {bullets.map((b, i) => <li key={i} style={{ marginBottom: 1 }}>{b}</li>)}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Education & Skills side by side */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          {education.length > 0 && (
+            <div style={{ flex: 1, background: 'white', borderRadius: 10, padding: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              <h2 style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                Education
+              </h2>
+              {education.map((edu) => (
+                <div key={edu.id} style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#111' }}>
+                    {edu.degree}{edu.field ? ` in ${edu.field}` : ''}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#555' }}>{edu.institution}</div>
+                  <div style={{ fontSize: 8, color: '#999' }}>{dateRange(edu.startDate, edu.endDate)}</div>
+                  {edu.gpa && <div style={{ fontSize: 8, color: '#666' }}>GPA: {edu.gpa}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {skills.length > 0 && (
+            <div style={{ flex: 1, background: 'white', borderRadius: 10, padding: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              <h2 style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                Skills
+              </h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {skills.map((skill) => (
+                  <span key={skill.id} style={{
+                    fontSize: 8, background: `${accent}12`, padding: '3px 10px',
+                    borderRadius: 14, color: accent, fontWeight: 500,
+                  }}>
+                    {skill.name}
+                  </span>
+                ))}
+              </div>
+              {profile?.hobbies && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 8, fontWeight: 600, color: '#888', marginBottom: 3, textTransform: 'uppercase' }}>Interests</div>
+                  <p style={{ fontSize: 8.5, color: '#555', margin: 0, lineHeight: 1.5 }}>{profile.hobbies}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// 14. TYPOGRAPH — "Typograph"
+// Typography-first design with large name, minimal decoration, editorial style
+// ════════════════════════════════════════════════════════════════
+function TypographTemplate({ profile, experiences, education, skills }: ResumeRenderData) {
+  const name = fullName(profile);
+  const accent = '#ea580c';
+
+  const contactItems = [
+    profile?.email, profile?.phone, profile?.location,
+    profile?.website, profile?.linkedin, profile?.github,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div style={{ ...a4Style, padding: '18mm 18mm 15mm', overflow: 'visible' }}>
+      {/* Name - oversized */}
+      <div style={{ marginBottom: 4 }}>
+        <h1 style={{
+          fontSize: 36, fontWeight: 900, letterSpacing: '-0.04em', margin: 0,
+          color: '#000', lineHeight: 1, textTransform: 'uppercase',
+        }}>
+          {name}
+        </h1>
+      </div>
+
+      {/* Job title + image */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        {profile?.jobTitle && (
+          <div style={{ fontSize: 13, color: accent, fontWeight: 600, letterSpacing: '0.02em' }}>
+            {profile.jobTitle}
+          </div>
+        )}
+        {profile?.image && (
+          <img src={profile.image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginLeft: 'auto' }} />
+        )}
+      </div>
+
+      {/* Contact line */}
+      {contactItems.length > 0 && (
+        <div style={{ fontSize: 8.5, color: '#666', letterSpacing: '0.02em', marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid #ddd' }}>
+          {contactItems.map((item, i) => (
+            <span key={i}>{item}{i < contactItems.length - 1 ? <span style={{ color: accent, margin: '0 6px' }}>|</span> : ''}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Summary */}
+      {profile?.summary && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6, color: accent }}>
+            Profile
+          </div>
+          <p style={{ fontSize: 10, color: '#333', margin: 0, lineHeight: 1.7, fontWeight: 300 }}>{profile.summary}</p>
+        </div>
+      )}
+
+      {/* Experience */}
+      {experiences.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 10, color: accent }}>
+            Experience
+          </div>
+          {experiences.map((exp, idx) => {
+            const bullets = parseBullets(exp.description);
+            return (
+              <div key={exp.id} style={{ marginBottom: idx < experiences.length - 1 ? 12 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h3 style={{ fontSize: 11, fontWeight: 700, margin: 0, color: '#000' }}>{exp.position}</h3>
+                  <span style={{ fontSize: 8, color: '#999', flexShrink: 0, marginLeft: 8 }}>
+                    {dateRange(exp.startDate, exp.endDate, exp.current)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, color: accent, fontWeight: 500, fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>
+                  {exp.company}{exp.location ? `, ${exp.location}` : ''}
+                </div>
+                {bullets.length > 0 && (
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 9.5, color: '#444', lineHeight: 1.6, fontWeight: 300 }}>
+                    {bullets.map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Education */}
+      {education.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8, color: accent }}>
+            Education
+          </div>
+          {education.map((edu) => (
+            <div key={edu.id} style={{ marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#000' }}>
+                  {edu.degree}{edu.field ? ` in ${edu.field}` : ''}
+                </span>
+                <span style={{ fontSize: 8, color: '#999', flexShrink: 0, marginLeft: 8 }}>
+                  {dateRange(edu.startDate, edu.endDate)}
+                </span>
+              </div>
+              <div style={{ fontSize: 9.5, color: accent, fontWeight: 500, fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>{edu.institution}</div>
+              {edu.gpa && <div style={{ fontSize: 8.5, color: '#666' }}>GPA: {edu.gpa}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Skills + Hobbies */}
+      <div style={{ display: 'flex', gap: 24 }}>
+        {skills.length > 0 && (
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8, color: accent }}>
+              Skills
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {skills.map((skill) => (
+                <span key={skill.id} style={{ fontSize: 9, color: '#333', fontWeight: 400 }}>
+                  {skill.name}{skills.indexOf(skill) < skills.length - 1 ? <span style={{ color: accent, marginLeft: 6 }}>·</span> : ''}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {profile?.hobbies && (
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8, color: accent }}>
+              Interests
+            </div>
+            <p style={{ fontSize: 9, color: '#555', margin: 0, lineHeight: 1.6, fontWeight: 300 }}>{profile.hobbies}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════════
 // Main renderResume function
 // ════════════════════════════════════════════════════════════════
 export function renderResume(templateId: string, data: ResumeRenderData): React.ReactNode {
@@ -1848,6 +2423,14 @@ export function renderResume(templateId: string, data: ResumeRenderData): React.
       return <AcademicTemplate {...data} />;
     case 'bold':
       return <BoldTemplate {...data} />;
+    case 'swiss':
+      return <SwissTemplate {...data} />;
+    case 'corporate':
+      return <CorporateTemplate {...data} />;
+    case 'infresh':
+      return <InfreshTemplate {...data} />;
+    case 'typograph':
+      return <TypographTemplate {...data} />;
     default:
       return <MinimalTemplate {...data} />;
   }
@@ -1865,4 +2448,8 @@ export const TEMPLATE_LIST = [
   { id: 'technical', name: 'Technical', description: 'Developer-focused with code-style accents' },
   { id: 'academic', name: 'Academic', description: 'Traditional academic CV with education first' },
   { id: 'bold', name: 'Bold', description: 'Stand out with a vibrant gradient header' },
+  { id: 'swiss', name: 'Swiss', description: 'Grid-based layout with red accent bar' },
+  { id: 'corporate', name: 'Corporate', description: 'Traditional corporate with teal header' },
+  { id: 'infresh', name: 'Infresh', description: 'Modern card-based with rounded sections' },
+  { id: 'typograph', name: 'Typograph', description: 'Typography-first editorial design' },
 ];

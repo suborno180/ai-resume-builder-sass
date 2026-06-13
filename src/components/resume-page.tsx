@@ -120,6 +120,10 @@ export default function ResumePage() {
               <SelectItem value="technical">Technical</SelectItem>
               <SelectItem value="academic">Academic</SelectItem>
               <SelectItem value="bold">Bold</SelectItem>
+              <SelectItem value="swiss">Swiss</SelectItem>
+              <SelectItem value="corporate">Corporate</SelectItem>
+              <SelectItem value="infresh">Infresh</SelectItem>
+              <SelectItem value="typograph">Typograph</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex gap-2">

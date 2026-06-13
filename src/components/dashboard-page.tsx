@@ -320,7 +320,7 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="font-semibold">Browse Templates</h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Choose from 6 professional resume templates
+                    Choose from 14 professional resume templates
                   </p>
                 </div>
                 <ChevronRight className="size-5 text-muted-foreground group-hover:text-amber-500 transition-colors ml-auto shrink-0 mt-1" />
