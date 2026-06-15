@@ -24,7 +24,7 @@ function getHashRoute(): AppRoute {
 // ── Footer ───────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="border-t border-border/30 bg-background/80 backdrop-blur-sm mt-auto">
+    <footer className="no-print border-t border-border/30 bg-background/80 backdrop-blur-sm mt-auto">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -123,8 +123,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex-1">
+    <div className="min-h-screen bg-background flex flex-col print:bg-white print:min-h-0">
+      <div className="flex-1 print:flex-none">
         {renderPage()}
       </div>
       {showFooter && <Footer />}

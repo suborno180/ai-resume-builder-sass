@@ -43,43 +43,7 @@ export default function ResumePage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex flex-col">
-      {/* Print-specific CSS */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @page {
-          size: A4;
-          margin: 0;
-        }
-        @media print {
-          body {
-            margin: 0;
-            padding: 0;
-            background: white;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .resume-print-area {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            box-shadow: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .resume-print-area > div {
-            break-inside: avoid;
-          }
-        }
-        @media screen {
-          .resume-print-area {
-            break-inside: avoid;
-          }
-          .resume-print-area > div > div > div {
-            break-inside: avoid;
-          }
-        }
-      ` }} />
-
+    <div className="resume-page-wrapper min-h-screen bg-neutral-900 flex flex-col">
       {/* Toolbar */}
       <div className="no-print sticky top-0 z-40 bg-neutral-800/90 backdrop-blur-md border-b border-neutral-700">
         <div className="flex h-12 items-center justify-between px-4 sm:px-6">
@@ -149,7 +113,7 @@ export default function ResumePage() {
       </div>
 
       {/* Resume Document */}
-      <div className="flex-1 flex flex-col items-center justify-start p-4 sm:p-6 overflow-auto">
+      <div className="resume-scroll-container flex-1 flex flex-col items-center justify-start p-4 sm:p-6 overflow-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -157,7 +121,7 @@ export default function ResumePage() {
         >
           <div
             className="resume-print-area bg-white shadow-2xl"
-            style={{ width: '210mm', minHeight: '297mm' }}
+            style={{ width: '210mm' }}
           >
             {renderResume(selectedTemplate, resumeData)}
           </div>

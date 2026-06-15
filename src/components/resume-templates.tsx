@@ -52,6 +52,8 @@ const a4Style: React.CSSProperties = {
   position: 'relative',
   overflow: 'visible',
   boxSizing: 'border-box',
+  pageBreakInside: 'avoid',
+  breakInside: 'avoid',
 };
 
 
